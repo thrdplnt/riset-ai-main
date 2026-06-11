@@ -46,16 +46,16 @@ export class Pengguna {
     password: string;
   }): Promise<Pengguna> {
     const id = crypto.randomUUID();
-    const password_hash = await hashPassword(data.password);
+    const password = await hashPassword(data.password);
 
     const rows = await sql`
-      INSERT INTO users (id, name, email, telp, password_hash, role, is_active, created_at)
+      INSERT INTO users (id, name, email, telp, password, role, is_active, created_at)
       VALUES (
         ${id},
         ${data.name},
         ${data.email},
         ${data.telp},
-        ${password_hash},
+        ${password},
         'user',
         true,
         NOW()
@@ -88,16 +88,16 @@ export class Pengguna {
 
   async autentikasi(password: string): Promise<boolean> {
     const rows = await sql`
-      SELECT password_hash FROM users WHERE id = ${this.id}
+      SELECT password FROM users WHERE id = ${this.id}
     `;
     if (rows.length === 0) return false;
-    return await verifyPassword(password, rows[0].password_hash);
+    return await verifyPassword(password, rows[0].password);
   }
 
   async updatePassword(newPassword: string): Promise<void> {
-    const password_hash = await hashPassword(newPassword);
+    const password = await hashPassword(newPassword);
     await sql`
-      UPDATE users SET password_hash = ${password_hash} WHERE id = ${this.id}
+      UPDATE users SET password = ${password} WHERE id = ${this.id}
     `;
   }
 
