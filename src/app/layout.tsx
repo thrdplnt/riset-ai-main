@@ -1,23 +1,22 @@
-import type { Metadata } from "next";
+"use client";
+
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import theme from "@/theme";
-
-export const metadata: Metadata = {
-  title: "Riset AI",
-  description: "Multi-LLM API Gateway",
-};
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
