@@ -28,13 +28,26 @@ export default function ForgotPasswordPage() {
     setError("");
     setLoading(true);
 
-    // Placeholder — implementasi nanti
-    setTimeout(() => {
-      setSuccess(true);
-      setLoading(false);
-    }, 1000);
-  };
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Terjadi kesalahan.");
+      } else {
+        setSuccess(true);
+      }
+    } catch {
+      setError("Tidak dapat terhubung ke server.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <AuthLayout
       title="Forgot Password"
