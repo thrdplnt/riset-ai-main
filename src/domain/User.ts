@@ -1,6 +1,7 @@
 import sql from "@/db/postgres";
 import { hashPassword, verifyPassword } from "@/utils/hash";
 import { User, UserRole } from "@/utils/types";
+import db from "@/db/postgres";
 
 export class Pengguna {
   id: string;
@@ -46,16 +47,16 @@ export class Pengguna {
     password: string;
   }): Promise<Pengguna> {
     const id = crypto.randomUUID();
-    const password_hash = await hashPassword(data.password);
+    const password = await hashPassword(data.password);
 
     const rows = await sql`
-      INSERT INTO users (id, name, email, telp, password_hash, role, is_active, created_at)
+      INSERT INTO users (id, name, email, telp, password, role, is_active, created_at)
       VALUES (
         ${id},
         ${data.name},
         ${data.email},
         ${data.telp},
-        ${password_hash},
+        ${password},
         'user',
         true,
         NOW()
@@ -88,16 +89,16 @@ export class Pengguna {
 
   async autentikasi(password: string): Promise<boolean> {
     const rows = await sql`
-      SELECT password_hash FROM users WHERE id = ${this.id}
+      SELECT password FROM users WHERE id = ${this.id}
     `;
     if (rows.length === 0) return false;
-    return await verifyPassword(password, rows[0].password_hash);
+    return await verifyPassword(password, rows[0].password);
   }
 
   async updatePassword(newPassword: string): Promise<void> {
-    const password_hash = await hashPassword(newPassword);
+    const password = await hashPassword(newPassword);
     await sql`
-      UPDATE users SET password_hash = ${password_hash} WHERE id = ${this.id}
+      UPDATE users SET password = ${password} WHERE id = ${this.id}
     `;
   }
 
@@ -115,5 +116,17 @@ export class Pengguna {
       is_active: this.is_active,
       created_at: this.created_at,
     };
+  }
+  static async simpanResetToken(id: string, token: string, expiresAt: Date) {
+    await db`UPDATE users SET reset_token = ${token}, reset_token_expires_at = ${expiresAt} WHERE id = ${id}`;
+  }
+
+  static async findByResetToken(token: string) {
+    const result = await db`SELECT * FROM users WHERE reset_token = ${token} AND reset_token_expires_at > NOW()`;
+    return result[0] ?? null;
+  }
+
+  static async resetPassword(id: string, hashedPassword: string) {
+    await db`UPDATE users SET password = ${hashedPassword}, reset_token = NULL, reset_token_expires_at = NULL WHERE id = ${id}`;
   }
 }
