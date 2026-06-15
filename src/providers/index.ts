@@ -4,7 +4,7 @@ import { callOpenAI } from './openai';
 import { callGemini } from './gemini';
 import { callAnthropic } from './anthropic';
 import { LLMRequest, LLMResponse, ModelConfig } from './types';
-import sql from '@/db';
+import sql from "@/db/postgres";
 
 export async function getModelConfig(model_id: string): Promise<ModelConfig> {
   const rows = await sql`

@@ -1,7 +1,7 @@
 // src/app/api/admin/provider-models/route.ts
 
 import { NextResponse } from 'next/server';
-import sql from '@/db';
+import sql from "@/db/postgres";
 import { randomUUID } from 'crypto';
 
 export async function GET() {
@@ -16,36 +16,50 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { provider_id, model_name, display_name } = await req.json();
+  try {
+    const { provider_id, model_name, display_name } = await req.json();
 
-  const existing = await sql`
-    SELECT id FROM models
-    WHERE provider_id = ${provider_id} AND model_name = ${model_name}
-  `;
+    const existing = await sql`
+      SELECT id FROM models
+      WHERE provider_id = ${provider_id} AND model_name = ${model_name}
+    `;
 
-  if (existing.length > 0) {
+    if (existing.length > 0) {
+      return NextResponse.json(
+        { success: false, message: 'Model sudah ada' },
+        { status: 409 }
+      );
+    }
+
+    await sql`
+      INSERT INTO models (id, provider_id, display_name, model_name, is_active)
+      VALUES (${randomUUID()}, ${provider_id}, ${display_name}, ${model_name}, true)
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: 'Model sudah ada' },
-      { status: 409 }
+      { success: false, message: 'Gagal menambah model', error: error.message },
+      { status: 500 }
     );
   }
-
-  await sql`
-    INSERT INTO models (id, provider_id, display_name, model_name, is_active)
-    VALUES (${randomUUID()}, ${provider_id}, ${display_name}, ${model_name}, true)
-  `;
-
-  return NextResponse.json({ success: true });
 }
 
 export async function PUT(req: Request) {
-  const { model_id, is_active } = await req.json();
+  try {
+    const { model_id, is_active } = await req.json();
 
-  await sql`
-    UPDATE models SET is_active = ${is_active} WHERE id = ${model_id}
-  `;
+    await sql`
+      UPDATE models SET is_active = ${is_active} WHERE id = ${model_id}
+    `;
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, message: 'Gagal mengupdate model', error: error.message },
+      { status: 500 }
+    );
+  }
 }
 
 // export async function DELETE(req: Request) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import sql from '@/db';
+import sql from "@/db/postgres";
 
 async function getBaseUrl(provider_id: string): Promise<string> {
   const rows = await sql`

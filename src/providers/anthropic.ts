@@ -6,10 +6,28 @@ export async function callAnthropic(
   config: ModelConfig,
   req: LLMRequest
 ): Promise<LLMResponse> {
-  const messages = [
+
+  const rawMessages = [
     ...(req.history ?? []),
     { role: 'user', content: req.prompt },
   ];
+
+  const messages: { role: string; content: string }[] = [];
+  for (const msg of rawMessages) {
+    const lastMsg = messages[messages.length - 1];
+    
+    if (lastMsg && lastMsg.role === msg.role) {
+
+      lastMsg.content += `\n\n${msg.content}`;
+    } else {
+
+      messages.push({ role: msg.role, content: msg.content });
+    }
+  }
+
+  if (messages.length > 0 && messages[0].role !== 'user') {
+    messages.shift(); 
+  }
 
   const res = await fetch(`${config.base_url}/messages`, {
     method: 'POST',
