@@ -19,7 +19,11 @@ export async function callGemini(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents }),
+      body: JSON.stringify({ contents,
+        generationConfig: {
+          maxOutputTokens: req.quota_limit,
+        },
+       }),
     }
   );
 
@@ -30,5 +34,6 @@ export async function callGemini(
     text: data.candidates[0].content.parts[0].text,
     input_tokens: data.usageMetadata.promptTokenCount,
     output_tokens: data.usageMetadata.candidatesTokenCount,
+    is_truncated:  data.candidates[0].finishReason === 'MAX_TOKENS',
   };
 }

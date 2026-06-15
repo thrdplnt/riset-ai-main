@@ -17,7 +17,7 @@ export async function callOpenAI(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
     },
-    body: JSON.stringify({ model: config.model_name, messages }),
+    body: JSON.stringify({ model: config.model_name, messages, max_tokens: req.quota_limit }),
   });
 
   if (!res.ok) throw new Error(`OpenAI error: ${res.status}`);
@@ -27,5 +27,6 @@ export async function callOpenAI(
     text: data.choices[0].message.content,
     input_tokens: data.usage.prompt_tokens,
     output_tokens: data.usage.completion_tokens,
+    is_truncated: data.choices[0].finish_reason === 'length', 
   };
 }

@@ -38,7 +38,7 @@ export async function callAnthropic(
     },
     body: JSON.stringify({
       model: config.model_name,
-      max_tokens: 1024,
+      max_tokens: req.quota_limit,
       messages,
     }),
   });
@@ -50,5 +50,6 @@ export async function callAnthropic(
     text: data.content[0].text,
     input_tokens: data.usage.input_tokens,
     output_tokens: data.usage.output_tokens,
+    is_truncated:  data.stop_reason === 'max_tokens',
   };
 }
