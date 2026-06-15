@@ -17,7 +17,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { provider_id, model_name, display_name } = await req.json();
+    const { provider_id, model_name, display_name, max_context_length } = await req.json();
 
     const existing = await sql`
       SELECT id FROM models
@@ -32,8 +32,8 @@ export async function POST(req: Request) {
     }
 
     await sql`
-      INSERT INTO models (id, provider_id, display_name, model_name, is_active)
-      VALUES (${randomUUID()}, ${provider_id}, ${display_name}, ${model_name}, true)
+      INSERT INTO models (id, provider_id, display_name, model_name, is_active, max_context_length)
+      VALUES (${randomUUID()}, ${provider_id}, ${display_name}, ${model_name}, true, ${max_context_length ?? 4096})
     `;
 
     return NextResponse.json({ success: true });

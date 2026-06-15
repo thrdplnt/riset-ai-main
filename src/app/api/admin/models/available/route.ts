@@ -18,7 +18,7 @@ async function fetchOpenAIModels() {
   if (data.error) throw new Error(data.error.message);
   return data.data
     .filter((m: any) => m.id.startsWith('gpt'))
-    .map((m: any) => ({ model_name: m.id, display_name: m.id }));
+    .map((m: any) => ({ model_name: m.id, display_name: m.id, max_context_length: m.context_window ?? 4096 }));
 }
 
 async function fetchGeminiModels() {
@@ -31,7 +31,21 @@ async function fetchGeminiModels() {
     .map((m: any) => ({
       model_name: m.name.replace('models/', ''),
       display_name: m.displayName,
+      max_context_length: m.inputTokenLimit ?? 4096,
     }));
+}
+
+const ANTHROPIC_CONTEXT: Record<string, number> = {
+  'claude-opus-4-8':           200000,
+  'claude-opus-4-7':           200000,
+  'claude-opus-4-6':           200000,
+  'claude-sonnet-4-6':         200000,
+  'claude-haiku-4-5-20251001': 200000,
+};
+
+function guessAnthropicContext(model_id: string): number {
+  if (model_id.startsWith('claude')) return 200000;
+  return 4096;
 }
 
 async function fetchAnthropicModels() {
@@ -47,6 +61,7 @@ async function fetchAnthropicModels() {
   return data.data.map((m: any) => ({
     model_name: m.id,
     display_name: m.id,
+    max_context_length: ANTHROPIC_CONTEXT[m.id] ?? guessAnthropicContext(m.id),
   }));
 }
 
