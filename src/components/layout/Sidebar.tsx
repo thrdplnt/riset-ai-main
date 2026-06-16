@@ -1,7 +1,9 @@
 "use client";
 
-import { Box, Divider, Typography, styled, useTheme } from "@mui/material";
+import { Box, Divider, IconButton, Typography, styled } from "@mui/material";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import SidebarMenu from "./SidebarMenu";
+import { useRouter } from "next/navigation";
 
 const SidebarWrapper = styled(Box)(({ theme }) => (`
   width: 280px;
@@ -21,21 +23,24 @@ const SidebarWrapper = styled(Box)(({ theme }) => (`
 interface SidebarProps {
   role: "user" | "admin";
   onLogout: () => void;
+  backPath?: string;
+  title?: string;
 }
 
-export default function Sidebar({ role, onLogout }: SidebarProps) {
-  const theme = useTheme();
+export default function Sidebar({ role, onLogout, backPath, title = "Settings" }: SidebarProps) {
+  const router = useRouter();
 
   return (
     <SidebarWrapper>
-      {/* Logo */}
-      <Box sx={{ px: 3, py: 2.5 }}>
-        <Typography
-            variant="h5"
-            color="primary"
-            sx={{ fontWeight: 700, letterSpacing: 0.5 }}
-        >
-            Riset AI
+      {/* Header */}
+      <Box sx={{ px: 2, py: 2, display: "flex", alignItems: "center", gap: 1, minHeight: 64 }}>
+        {backPath && (
+          <IconButton size="small" onClick={() => router.push(backPath)}>
+            <ArrowBackOutlinedIcon fontSize="small" />
+          </IconButton>
+        )}
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          {title}
         </Typography>
       </Box>
 

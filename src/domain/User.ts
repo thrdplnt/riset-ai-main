@@ -1,7 +1,6 @@
 import sql from "@/db/postgres";
 import { hashPassword, verifyPassword } from "@/utils/hash";
 import { User, UserRole } from "@/utils/types";
-import db from "@/db/postgres";
 
 export class Pengguna {
   id: string;
@@ -117,16 +116,17 @@ export class Pengguna {
       created_at: this.created_at,
     };
   }
+
   static async simpanResetToken(id: string, token: string, expiresAt: Date) {
-    await db`UPDATE users SET reset_token = ${token}, reset_token_expires_at = ${expiresAt} WHERE id = ${id}`;
+    await sql`UPDATE users SET reset_token = ${token}, reset_token_expires_at = ${expiresAt} WHERE id = ${id}`;
   }
 
   static async findByResetToken(token: string) {
-    const result = await db`SELECT * FROM users WHERE reset_token = ${token} AND reset_token_expires_at > NOW()`;
+    const result = await sql`SELECT * FROM users WHERE reset_token = ${token} AND reset_token_expires_at > NOW()`;
     return result[0] ?? null;
   }
 
   static async resetPassword(id: string, hashedPassword: string) {
-    await db`UPDATE users SET password = ${hashedPassword}, reset_token = NULL, reset_token_expires_at = NULL WHERE id = ${id}`;
+    await sql`UPDATE users SET password = ${hashedPassword}, reset_token = NULL, reset_token_expires_at = NULL WHERE id = ${id}`;
   }
 }
