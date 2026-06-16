@@ -139,20 +139,15 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
           </ListItemIcon>
           <ListItemText
             primary={item.label}
-            secondary={item.subtitle}
             slotProps={{
               primary: {
                 sx: {
                   fontSize: 14,
                   fontWeight: pathname === item.path ? 600 : 400,
-                  color:
-                    pathname === item.path
-                      ? theme.palette.text.primary
-                      : theme.palette.text.secondary,
+                  color: pathname === item.path
+                    ? theme.palette.text.primary
+                    : theme.palette.text.secondary,
                 },
-              },
-              secondary: {
-                sx: { fontSize: 12 },
               },
             }}
           />
@@ -182,20 +177,15 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
               </ListItemIcon>
               <ListItemText
                 primary={item.label}
-                secondary={item.subtitle}
                 slotProps={{
                   primary: {
                     sx: {
                       fontSize: 14,
                       fontWeight: pathname === item.path ? 600 : 400,
-                      color:
-                        pathname === item.path
-                          ? theme.palette.text.primary
-                          : theme.palette.text.secondary,
+                      color: pathname === item.path
+                        ? theme.palette.text.primary
+                        : theme.palette.text.secondary,
                     },
-                  },
-                  secondary: {
-                    sx: { fontSize: 12 },
                   },
                 }}
               />
