@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
-import { SesiPerangkat } from "@/domain/DeviceSession";
 import { ROUTES } from "@/routes";
 
 const publicRoutes = [
@@ -9,13 +8,14 @@ const publicRoutes = [
   ROUTES.FORGOT_PASSWORD,
 ];
 
-const adminRoutes = [
+const adminRoutes: string[] = [
   ROUTES.ADMIN_USERS,
   ROUTES.ADMIN_MODELS,
 ];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
   if (publicRoutes.some((route) => route === pathname)) {
     return NextResponse.next();
   }
@@ -33,13 +33,11 @@ export async function middleware(req: NextRequest) {
   const isAdminRoute = adminRoutes.some((route) =>
     pathname.startsWith(route)
   );
-  
+
   if (isAdminRoute && payload.role !== "admin") {
     return NextResponse.redirect(new URL(ROUTES.CHAT, req.url));
   }
-  if (pathname.startsWith("/chat") && payload.role === "admin") {
-    return NextResponse.redirect(new URL(ROUTES.ADMIN_USERS, req.url));
-  }
+
   return NextResponse.next();
 }
 
