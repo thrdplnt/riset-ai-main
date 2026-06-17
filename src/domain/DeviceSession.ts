@@ -113,4 +113,18 @@ export class SesiPerangkat {
       WHERE id = ${this.id}
     `;
   }
+  static async hapusSessionTerlama(userId: string): Promise<void> {
+  await sql`
+    UPDATE device_sessions
+    SET is_active = false
+    WHERE id = (
+      SELECT id FROM device_sessions
+      WHERE user_id = ${userId}
+        AND is_active = true
+        AND expires_at > NOW()
+      ORDER BY created_at ASC
+      LIMIT 1
+    )
+  `;
+    }
 }
