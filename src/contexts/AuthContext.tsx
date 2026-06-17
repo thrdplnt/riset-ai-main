@@ -1,10 +1,18 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/routes";
 
+interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 interface AuthContextType {
+  user: AuthUser | null;
   login: (email: string, password: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
 }
@@ -13,6 +21,15 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  // Load user dari localStorage saat mount
+  useEffect(() => {
+    const stored = localStorage.getItem("risetai_user");
+    if (stored) {
+      try { setUser(JSON.parse(stored)); } catch {}
+    }
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -23,15 +40,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data = await res.json();
-
-      if (!data.success) {
-        return { error: data.message };
-      }
+      if (!data.success) return { error: data.message };
 
       // Simpan token ke cookie
       document.cookie = `token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
 
-      // Redirect berdasarkan role
+      // Simpan user info
+      const userInfo: AuthUser = {
+        id: data.data.user?.id ?? "",
+        name: data.data.user?.name ?? email.split("@")[0],
+        email: data.data.user?.email ?? email,
+        role: data.data.role,
+      };
+      localStorage.setItem("risetai_user", JSON.stringify(userInfo));
+      setUser(userInfo);
+
       if (data.data.role === "admin") {
         router.push(ROUTES.ADMIN_USERS);
       } else {
@@ -58,11 +81,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     document.cookie = "token=; path=/; max-age=0";
+    localStorage.removeItem("risetai_user");
+    setUser(null);
     router.push(ROUTES.LOGIN);
   };
 
   return (
-    <AuthContext.Provider value={{ login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
