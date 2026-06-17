@@ -23,7 +23,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  // Load user dari localStorage saat mount
   useEffect(() => {
     const stored = localStorage.getItem("risetai_user");
     if (stored) {
@@ -42,10 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (!data.success) return { error: data.message };
 
-      // Simpan token ke cookie
       document.cookie = `token=${data.data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
 
-      // Simpan user info
       const userInfo: AuthUser = {
         id: data.data.user?.id ?? "",
         name: data.data.user?.name ?? email.split("@")[0],
@@ -55,11 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("risetai_user", JSON.stringify(userInfo));
       setUser(userInfo);
 
-      if (data.data.role === "admin") {
-        router.push(ROUTES.ADMIN_USERS);
-      } else {
-        router.push(ROUTES.CHAT);
-      }
+      // Semua role ke chat dulu
+      router.push(ROUTES.CHAT);
 
       return {};
     } catch {
