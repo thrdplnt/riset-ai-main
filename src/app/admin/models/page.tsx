@@ -10,6 +10,7 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import { useEffect, useState } from "react";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 
 interface Model {
   id: string;
@@ -62,6 +63,8 @@ export default function ModelManagementPage() {
   const [presetOpen, setPresetOpen] = useState(false);
   const [available, setAvailable] = useState<AvailableModels | null>(null);
   const [loadingAvailable, setLoadingAvailable] = useState(false);
+  const [presetStep, setPresetStep] = useState<"provider" | "model">("provider");
+  const [presetProvider, setPresetProvider] = useState<{ id: string; label: string; key: keyof AvailableModels } | null>(null); 
 
   const getHeaders = () => ({
     "Content-Type": "application/json",
@@ -80,6 +83,8 @@ export default function ModelManagementPage() {
 
   const loadAvailable = async () => {
     setLoadingAvailable(true);
+    setPresetStep("provider");
+    setPresetProvider(null);
     setPresetOpen(true);
     try {
       const res = await fetch("/api/admin/models/available", { headers: getHeaders() });
@@ -107,7 +112,19 @@ export default function ModelManagementPage() {
     setPresetOpen(false);
   };
 
-  const handleAddManual = () => {
+  const handleAddManual = async () => {
+    if (!available) {
+      setLoadingAvailable(true);
+      try {
+        const res = await fetch("/api/admin/models/available", { headers: getHeaders() });
+        const data = await res.json();
+        setAvailable(data);
+      } catch {
+        setAvailable(null);
+      } finally {
+        setLoadingAvailable(false);
+      }
+    }
     setModels((prev) => [...prev, {
       id: "",
       provider_id: "openai",
@@ -117,6 +134,13 @@ export default function ModelManagementPage() {
       is_active: true,
       isNew: true,
     }]);
+  };
+
+  const getModelsByProvider = (provider_id: string): AvailableModel[] => {
+    if (!available) return [];
+    const key = provider_id === "claude" ? "anthropic" : provider_id as keyof AvailableModels;
+    const val = available[key];
+    return Array.isArray(val) ? val : [];
   };
 
   const handleChange = (index: number, field: keyof Model, value: unknown) => {
@@ -200,6 +224,16 @@ export default function ModelManagementPage() {
     return Array.isArray(val) ? val : [];
   };
 
+  const handleProviderChange = (index: number, provider_id: string) => {
+    const providerName = PROVIDERS.find((p) => p.id === provider_id)?.label ?? provider_id;
+    setModels((prev) =>
+      prev.map((m, i) => i === index
+        ? { ...m, provider_id, provider_name: providerName, model_name: "", isDirty: true }
+        : m
+      )
+    );
+  };
+
   return (
     <Box>
       <Typography variant="h6" sx={{ fontWeight: 600 }}>Model Management</Typography>
@@ -270,7 +304,10 @@ export default function ModelManagementPage() {
               <Stack direction="row" sx={{ alignItems: "center", mb: 2 }} spacing={1.5}>
                 <FormControl size="small" sx={{ minWidth: 130 }}>
                   <Select value={model.provider_id}
-                    onChange={(e) => handleChange(index, "provider_id", e.target.value)}
+                    onChange={(e) => {
+                      if (model.isNew) handleProviderChange(index, e.target.value);
+                      else handleChange(index, "provider_id", e.target.value);
+                    }}
                     disabled={!model.isNew}>
                     {PROVIDERS.map((p) => (
                       <MenuItem key={p.id} value={p.id}>{p.label}</MenuItem>
@@ -317,9 +354,25 @@ export default function ModelManagementPage() {
                     sx={{ mb: 0.5, display: "block" }}>
                     Model ID (API Name)
                   </Typography>
-                  <TextField fullWidth size="small" value={model.model_name}
-                    onChange={(e) => handleChange(index, "model_name", e.target.value)}
-                    placeholder="gpt-4o-mini" />
+                  {model.isNew ? (
+                    <FormControl fullWidth size="small">
+                      <Select
+                        value={model.model_name}
+                        onChange={(e) => handleChange(index, "model_name", e.target.value)}
+                        displayEmpty>
+                        <MenuItem value="" disabled>Pilih model</MenuItem>
+                        {getModelsByProvider(model.provider_id).map((m) => (
+                          <MenuItem key={m.model_name} value={m.model_name}>
+                            {m.model_name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  ) : (
+                    <TextField fullWidth size="small" value={model.model_name}
+                      onChange={(e) => handleChange(index, "model_name", e.target.value)}
+                      placeholder="gpt-4o-mini" />
+                  )}
                 </Box>
               </Stack>
             </Paper>
@@ -329,59 +382,64 @@ export default function ModelManagementPage() {
 
       {/* Dialog Preset */}
       <Dialog open={presetOpen} onClose={() => setPresetOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>Pilih Model dari Provider</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 1 }}>
+          {presetStep === "model" && (
+            <IconButton size="small" onClick={() => setPresetStep("provider")} sx={{ border: "none" }}>
+              <ArrowBackOutlinedIcon fontSize="small" />
+            </IconButton>
+          )}
+          {presetStep === "provider" ? "Pilih Provider" : `Pilih Model — ${presetProvider?.label}`}
+        </DialogTitle>
         <DialogContent>
           {loadingAvailable ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
               <CircularProgress size={32} />
             </Box>
-          ) : (
-            <Stack spacing={3} sx={{ mt: 1 }}>
-              {(["openai", "gemini", "anthropic"] as const).map((provKey) => {
-                const provId = provKey === "anthropic" ? "claude" : provKey;
-                const provLabel = PROVIDERS.find((p) => p.id === provId)?.label ?? provKey;
-                const list = getAvailableList(provKey);
+          ) : presetStep === "provider" ? (
+            // Step 1: pilih provider
+            <Stack spacing={0.5} sx={{ mt: 1 }}>
+              {PROVIDERS.map((p) => {
+                const key = p.id === "claude" ? "anthropic" : p.id as keyof AvailableModels;
                 return (
-                  <Box key={provKey}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                      {provLabel}
-                    </Typography>
-                    {list.length === 0 ? (
-                      <Typography variant="body2" color="text.secondary">
-                        Tidak ada model tersedia
-                      </Typography>
-                    ) : (
-                      <Stack spacing={0.5}>
-                        {list.map((m) => {
-                          const exists = models.some((em) => em.model_name === m.model_name);
-                          return (
-                            <Stack key={m.model_name} direction="row"
-                              sx={{ alignItems: "center", justifyContent: "space-between",
-                                p: 1.5, borderRadius: "8px",
-                                border: "1px solid", borderColor: "divider",
-                                bgcolor: exists ? "action.hover" : "background.paper" }}>
-                              <Box>
-                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                  {m.display_name}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {m.model_name}
-                                </Typography>
-                              </Box>
-                              <Button size="small" variant={exists ? "outlined" : "contained"}
-                                disabled={exists}
-                                onClick={() => handleAddFromPreset(provId, m)}
-                                sx={{ borderRadius: "8px", minWidth: 80 }}>
-                                {exists ? "Sudah ada" : "Tambah"}
-                              </Button>
-                            </Stack>
-                          );
-                        })}
-                      </Stack>
-                    )}
-                  </Box>
+                  <Paper key={p.id} variant="outlined"
+                    onClick={() => { setPresetProvider({ ...p, key }); setPresetStep("model"); }}
+                    sx={{ p: 1.5, borderRadius: "8px", cursor: "pointer",
+                      "&:hover": { bgcolor: "action.hover" } }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{p.label}</Typography>
+                  </Paper>
                 );
               })}
+            </Stack>
+          ) : (
+            // Step 2: pilih model dari provider yang dipilih
+            <Stack spacing={0.5} sx={{ mt: 1 }}>
+              {getAvailableList(presetProvider!.key).length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  Tidak ada model tersedia
+                </Typography>
+              ) : (
+                getAvailableList(presetProvider!.key).map((m) => {
+                  const exists = models.some((em) => em.model_name === m.model_name);
+                  return (
+                    <Stack key={m.model_name} direction="row"
+                      sx={{ alignItems: "center", justifyContent: "space-between",
+                        p: 1.5, borderRadius: "8px", border: "1px solid",
+                        borderColor: "divider",
+                        bgcolor: exists ? "action.hover" : "background.paper" }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{m.display_name}</Typography>
+                        <Typography variant="caption" color="text.secondary">{m.model_name}</Typography>
+                      </Box>
+                      <Button size="small" variant={exists ? "outlined" : "contained"}
+                        disabled={exists}
+                        onClick={() => handleAddFromPreset(presetProvider!.id, m)}
+                        sx={{ borderRadius: "8px", minWidth: 80 }}>
+                        {exists ? "Sudah ada" : "Tambah"}
+                      </Button>
+                    </Stack>
+                  );
+                })
+              )}
             </Stack>
           )}
         </DialogContent>
