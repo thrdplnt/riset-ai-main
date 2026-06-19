@@ -8,7 +8,6 @@ import {
 import { MouseEvent, useState } from "react";
 import { ROUTES } from "@/routes";
 
-// ── Database icon (SVG custom) ─────────────────────────────
 const DatabaseIcon = ({ size = 13 }: { size?: number }) => (
   <svg
     width={size}
@@ -31,6 +30,7 @@ interface TokenBadgeProps {
   total: number | null;
   planName?: string;
   expiresAt?: string | null;
+  modelName?: string; // ← tambah ini
 }
 
 export const TokenBadge = ({
@@ -38,6 +38,7 @@ export const TokenBadge = ({
   total,
   planName = "Basic",
   expiresAt,
+  modelName,
 }: TokenBadgeProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorEl);
@@ -87,6 +88,24 @@ export const TokenBadge = ({
           <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
             {remaining !== null ? `${remaining.toLocaleString("en-US")} Token` : "—"}
           </Typography>
+          {modelName && (
+            <>
+              <Box sx={{
+                width: "1px", height: 12,
+                bgcolor: "custom.borderLight",
+                mx: 0.25,
+              }} />
+              <Typography variant="body2" color="text.secondary" sx={{
+                fontWeight: 500,
+                maxWidth: 120,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}>
+                {modelName}
+              </Typography>
+            </>
+          )}
         </Box>
       </Tooltip>
 
@@ -110,7 +129,6 @@ export const TokenBadge = ({
           },
         }}
       >
-        {/* Plan */}
         <Box sx={{ px: 2.5, py: 2, bgcolor: "action.hover" }}>
           <Typography variant="body2" color="text.secondary">Plan</Typography>
           <Typography sx={{ fontWeight: 700, fontSize: "16px", color: "text.primary" }}>
@@ -120,7 +138,6 @@ export const TokenBadge = ({
 
         <Divider />
 
-        {/* Quota */}
         <Box sx={{ px: 2.5, py: 2 }}>
           <Stack sx={{
             flexDirection: "row", justifyContent: "space-between",
@@ -130,6 +147,11 @@ export const TokenBadge = ({
               <Typography sx={{ fontWeight: 600, fontSize: "14px", color: "text.primary" }}>
                 Tokens Quota
               </Typography>
+              {modelName && (
+                <Typography variant="body2" color="text.secondary">
+                  Model: {modelName}
+                </Typography>
+              )}
               {expiry && (
                 <Typography variant="body2" color="text.secondary">
                   Expires {expiry}
@@ -171,7 +193,6 @@ export const TokenBadge = ({
 
         <Divider />
 
-        {/* Check Usage */}
         <Box sx={{ px: 2.5, py: 1.5 }}>
           <Link
             href={ROUTES.SETTINGS_TOKEN_USAGE}
