@@ -6,9 +6,37 @@ export async function callOpenAI(
   config: ModelConfig,
   req: LLMRequest
 ): Promise<LLMResponse> {
+  const history = req.history ?? [];
+
+  // Build user message content — bisa string biasa atau array (kalau ada attachment)
+  let userContent: any = req.prompt;
+
+  const images = (req.attachments ?? []).filter((a) => a.type === 'image');
+  const pdfTexts = (req.attachments ?? []).filter((a) => a.type === 'pdf');
+
+  if (images.length > 0 || pdfTexts.length > 0) {
+    const contentParts: any[] = [];
+
+    // PDF tidak didukung native OpenAI — sudah di-extract jadi text sebelumnya
+    // dan akan digabung ke prompt di message/route.ts, jadi di sini cuma handle gambar
+
+    if (req.prompt) {
+      contentParts.push({ type: 'text', text: req.prompt });
+    }
+
+    for (const img of images) {
+      contentParts.push({
+        type: 'image_url',
+        image_url: { url: img.url },
+      });
+    }
+
+    userContent = contentParts;
+  }
+
   const messages = [
-    ...(req.history ?? []),
-    { role: 'user', content: req.prompt },
+    ...history,
+    { role: 'user', content: userContent },
   ];
 
   const res = await fetch(`${config.base_url}/chat/completions`, {
@@ -27,6 +55,6 @@ export async function callOpenAI(
     text: data.choices[0].message.content,
     input_tokens: data.usage.prompt_tokens,
     output_tokens: data.usage.completion_tokens,
-    is_truncated: data.choices[0].finish_reason === 'length', 
+    is_truncated: data.choices[0].finish_reason === 'length',
   };
 }

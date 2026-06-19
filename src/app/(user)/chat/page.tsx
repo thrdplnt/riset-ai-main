@@ -4,12 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import { AppBar, Box, Stack, Toolbar } from "@mui/material";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { MessageBubble } from "@/components/chat/MessageBubble";
-import { ChatInput } from "@/components/chat/ChatInput";
+import { ChatInput, PendingAttachment } from "@/components/chat/ChatInput";
 import { FreeUserBanner } from "@/components/chat/FreeUserBanner";
 import { TokenBadge } from "@/components/chat/TokenBadge";
 import { UserMenu } from "@/components/chat/UserMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { Typography } from "@mui/material";
+
+interface MessageAttachment {
+  name: string;
+  type: "image" | "pdf";
+  mime_type: string;
+  url: string;
+}
 
 interface Message {
   id: string;
@@ -17,6 +24,7 @@ interface Message {
   content: string;
   modelName?: string;
   tokens?: { prompt: number; completion: number; total: number };
+  attachments?: MessageAttachment[];
 }
 
 interface Chat {
@@ -97,7 +105,10 @@ export default function ChatPage() {
     const data = await res.json();
     if (data.success) {
       const history: Message[] = data.data.history.flatMap((log: any) => [
-        { id: `${log.id}-user`, role: "user" as const, content: log.prompt_text },
+        {
+          id: `${log.id}-user`, role: "user" as const, content: log.prompt_text,
+          attachments: log.attachments ?? [],
+        },
         {
           id: `${log.id}-ai`, role: "assistant" as const, content: log.response_text,
           tokens: {
@@ -129,7 +140,7 @@ export default function ChatPage() {
     localStorage.setItem("lastModelName", name);
   };
 
-  const handleSend = async (prompt: string) => {
+  const handleSend = async (prompt: string, attachments: PendingAttachment[]) => {
     if (isFree) {
       setLimitError("Plan Free tidak dapat mengakses AI. Hubungi admin untuk upgrade.");
       return;
@@ -143,7 +154,7 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: prompt.slice(0, 50) }),
+        body: JSON.stringify({ title: prompt.slice(0, 50) || "New Chat" }),
       });
       const data = await res.json();
       if (data.success) {
@@ -157,6 +168,7 @@ export default function ChatPage() {
 
     const userMsg: Message = {
       id: crypto.randomUUID(), role: "user", content: prompt,
+      attachments,
     };
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
@@ -165,7 +177,7 @@ export default function ChatPage() {
       const res = await fetch(`/api/chat/${chatId}/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, model_id: modelId }),
+        body: JSON.stringify({ prompt, model_id: modelId, attachments }),
       });
       const data = await res.json();
 
@@ -183,11 +195,10 @@ export default function ChatPage() {
         }]);
         setRemaining(data.data.remaining_quota);
 
-        // Hanya update title kalau masih "New Chat"
         setChats((prev) =>
           prev.map((c) =>
             c.id === chatId && c.title === "New Chat"
-              ? { ...c, title: prompt.slice(0, 50) }
+              ? { ...c, title: prompt.slice(0, 50) || c.title }
               : c
           )
         );
@@ -232,7 +243,6 @@ export default function ChatPage() {
         display: "flex", flexDirection: "column",
         height: "100vh", overflow: "hidden",
       }}>
-        {/* Navbar */}
         <AppBar position="static" elevation={0} sx={{
           bgcolor: "background.paper",
           borderBottom: "1px solid", borderColor: "divider",
@@ -244,7 +254,7 @@ export default function ChatPage() {
             justifyContent: "flex-end",
             gap: 1.5,
           }}>
-            <TokenBadge remaining={remaining} total={total} />
+            <TokenBadge remaining={remaining} total={total} modelName={modelName} />
             <UserMenu user={user} onLogout={logout} />
           </Toolbar>
         </AppBar>

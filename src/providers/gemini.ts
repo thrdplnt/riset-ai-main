@@ -1,17 +1,31 @@
 // src/providers/gemini.ts
 
-import { LLMRequest, LLMResponse, ModelConfig } from './types';
+import { LLMRequest, LLMResponse, ModelConfig, extractBase64 } from './types';
 
 export async function callGemini(
   config: ModelConfig,
   req: LLMRequest
 ): Promise<LLMResponse> {
+  const history = (req.history ?? []).map((h) => ({
+    role: h.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: h.content }],
+  }));
+
+  // Build parts untuk user message — text + attachments
+  const userParts: any[] = [{ text: req.prompt }];
+
+  for (const att of req.attachments ?? []) {
+    userParts.push({
+      inlineData: {
+        mimeType: att.mime_type,
+        data: extractBase64(att.url),
+      },
+    });
+  }
+
   const contents = [
-    ...(req.history ?? []).map((h) => ({
-      role: h.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: h.content }],
-    })),
-    { role: 'user', parts: [{ text: req.prompt }] },
+    ...history,
+    { role: 'user', parts: userParts },
   ];
 
   const res = await fetch(
@@ -19,11 +33,12 @@ export async function callGemini(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents,
+      body: JSON.stringify({
+        contents,
         generationConfig: {
           maxOutputTokens: req.quota_limit,
         },
-       }),
+      }),
     }
   );
 
@@ -34,6 +49,6 @@ export async function callGemini(
     text: data.candidates[0].content.parts[0].text,
     input_tokens: data.usageMetadata.promptTokenCount,
     output_tokens: data.usageMetadata.candidatesTokenCount,
-    is_truncated:  data.candidates[0].finishReason === 'MAX_TOKENS',
+    is_truncated: data.candidates[0].finishReason === 'MAX_TOKENS',
   };
 }

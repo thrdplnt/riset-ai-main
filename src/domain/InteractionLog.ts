@@ -1,6 +1,13 @@
 import sql from "@/db/postgres";
 import { InteractionLog } from "@/utils/types";
 
+export interface Attachment {
+  name: string;
+  type: "image" | "pdf";
+  mime_type: string;
+  url: string; 
+}
+
 export class LogInteraksi {
   id: string;
   room_id: string;
@@ -11,8 +18,9 @@ export class LogInteraksi {
   input_tokens: number;
   output_tokens: number;
   interacted_at: Date;
+  attachments: Attachment[];
 
-  constructor(data: InteractionLog) {
+  constructor(data: InteractionLog & { attachments?: Attachment[] }) {
     this.id = data.id;
     this.room_id = data.room_id;
     this.model_id = data.model_id;
@@ -22,6 +30,7 @@ export class LogInteraksi {
     this.input_tokens = data.input_tokens;
     this.output_tokens = data.output_tokens;
     this.interacted_at = data.interacted_at;
+    this.attachments = data.attachments ?? [];
   }
 
   static async simpan(data: {
@@ -32,21 +41,23 @@ export class LogInteraksi {
     response_text: string;
     input_tokens: number;
     output_tokens: number;
+    attachments?: Attachment[];
   }): Promise<LogInteraksi> {
     const id = crypto.randomUUID();
     const rows = await sql`
       INSERT INTO interaction_logs (
         id, room_id, model_id, user_id,
         prompt_text, response_text,
-        input_tokens, output_tokens, interacted_at
+        input_tokens, output_tokens, interacted_at, attachments
       ) VALUES (
         ${id}, ${data.room_id}, ${data.model_id}, ${data.user_id},
         ${data.prompt_text}, ${data.response_text},
-        ${data.input_tokens}, ${data.output_tokens}, NOW()
+        ${data.input_tokens}, ${data.output_tokens}, NOW(),
+        ${JSON.stringify(data.attachments ?? [])}
       )
       RETURNING *
     `;
-    return new LogInteraksi(rows[0] as InteractionLog);
+    return new LogInteraksi(rows[0] as unknown as InteractionLog & { attachments: Attachment[] });
   }
 
   static async getByRoomId(
@@ -59,7 +70,7 @@ export class LogInteraksi {
       ORDER BY interacted_at ASC
       LIMIT ${limit}
     `;
-    return rows.map((r) => new LogInteraksi(r as InteractionLog));
+    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: Attachment[] }));
   }
 
   static async getByUserId(userId: string): Promise<LogInteraksi[]> {
@@ -70,15 +81,15 @@ export class LogInteraksi {
       WHERE il.user_id = ${userId}
       ORDER BY il.interacted_at DESC
     `;
-    return rows.map((r) => new LogInteraksi(r as InteractionLog));
+    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: Attachment[] }));
   }
 
   static toHistory(
     logs: LogInteraksi[]
-  ): { role: "user" | "assistant"; content: string }[] {
+  ): { role: "user" | "assistant"; content: string; attachments?: Attachment[] }[] {
     return logs.flatMap((log) => [
-      { role: "user" as const, content: log.prompt_text },
-      { role: "assistant" as const, content: log.response_text },
+      { role: "user" as const, content: log.prompt_text, attachments: log.attachments },
+      { role: "assistant" as const, content: log.response_text, attachments: undefined },
     ]);
   }
 }

@@ -1,18 +1,43 @@
 "use client";
 
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
-import { Box, CircularProgress, IconButton, Paper, Stack } from "@mui/material";
-import { KeyboardEvent, useRef, useState } from "react";
+import AddIcon from "@mui/icons-material/Add";
+import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
+import CloseIcon from "@mui/icons-material/Close";
+import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import {
+  Box, CircularProgress, IconButton, Menu, MenuItem,
+  Paper, Stack, Typography,
+} from "@mui/material";
+import { KeyboardEvent, useRef, useState, MouseEvent as ReactMouseEvent } from "react";
 import { ModelSelector } from "./ModelSelector";
 
+export interface PendingAttachment {
+  name: string;
+  type: "image" | "pdf";
+  mime_type: string;
+  url: string; // base64 data URL
+}
+
 interface ChatInputProps {
-  onSend: (message: string) => void;
+  onSend: (message: string, attachments: PendingAttachment[]) => void;
   modelId: string;
   onModelChange: (modelId: string, modelName: string) => void;
   loading?: boolean;
   placeholder?: string;
   menuDirection?: "up" | "down";
 }
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp,application/pdf";
+
+const fileToDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 export const ChatInput = ({
   onSend,
@@ -23,13 +48,86 @@ export const ChatInput = ({
   menuDirection = "up",
 }: ChatInputProps) => {
   const [value, setValue] = useState("");
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleOpenMenu = (e: ReactMouseEvent<HTMLElement>) => setMenuAnchor(e.currentTarget);
+  const handleCloseMenu = () => setMenuAnchor(null);
+
+  const handleUploadClick = () => {
+    handleCloseMenu();
+    fileInputRef.current?.click();
+  };
+
+  const addFiles = async (fileList: File[]) => {
+    setError("");
+    setUploading(true);
+
+    try {
+      for (const file of fileList) {
+        if (file.size > MAX_FILE_SIZE) {
+          setError(`File "${file.name || 'pasted file'}" terlalu besar (maks 10MB)`);
+          continue;
+        }
+
+        const isImage = file.type.startsWith("image/");
+        const isPdf = file.type === "application/pdf";
+
+        if (!isImage && !isPdf) {
+          setError(`Tipe file tidak didukung`);
+          continue;
+        }
+
+        const dataUrl = await fileToDataUrl(file);
+        setAttachments((prev) => [...prev, {
+          name: file.name || `pasted-${isImage ? "image.png" : "file.pdf"}`,
+          type: isImage ? "image" : "pdf",
+          mime_type: file.type,
+          url: dataUrl,
+        }]);
+      }
+    } catch {
+      setError("Gagal membaca file");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await addFiles(Array.from(files));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData.items;
+    const fileItems = Array.from(items).filter((item) => item.kind === "file");
+
+    if (fileItems.length === 0) return; // biarkan paste text normal
+
+    e.preventDefault();
+    const files = fileItems
+      .map((item) => item.getAsFile())
+      .filter((f): f is File => f !== null);
+
+    await addFiles(files);
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSend = () => {
     const trimmed = value.trim();
-    if (!trimmed || loading) return;
-    onSend(trimmed);
+    if ((!trimmed && attachments.length === 0) || loading) return;
+    onSend(trimmed, attachments);
     setValue("");
+    setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   };
 
@@ -47,7 +145,7 @@ export const ChatInput = ({
     el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   };
 
-  const canSend = value.trim().length > 0 && !loading;
+  const canSend = (value.trim().length > 0 || attachments.length > 0) && !loading;
 
   return (
     <Paper elevation={0} sx={{
@@ -59,7 +157,55 @@ export const ChatInput = ({
       px: 1, pt: 1.5, pb: 1,
       width: "100%",
     }}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_TYPES}
+        multiple
+        hidden
+        onChange={handleFileChange}
+      />
+
       <Stack sx={{ gap: 1.5 }}>
+        {attachments.length > 0 && (
+          <Stack direction="row" sx={{ gap: 1, px: 0.75, flexWrap: "wrap" }}>
+            {attachments.map((att, i) => (
+              <Box key={i} sx={{
+                position: "relative",
+                display: "flex", alignItems: "center", gap: 0.75,
+                px: 1, py: 0.5, borderRadius: "8px",
+                bgcolor: "action.hover",
+                border: "1px solid", borderColor: "custom.borderLight",
+                maxWidth: 180,
+              }}>
+                {att.type === "image" ? (
+                  <Box component="img" src={att.url} alt={att.name}
+                    sx={{ width: 24, height: 24, borderRadius: "4px", objectFit: "cover" }} />
+                ) : (
+                  <InsertDriveFileOutlinedIcon sx={{ fontSize: 18, color: "text.secondary" }} />
+                )}
+                <Typography sx={{
+                  fontSize: "12px", color: "text.primary",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {att.name}
+                </Typography>
+                <IconButton size="small" onClick={() => handleRemoveAttachment(i)}
+                  sx={{ width: 18, height: 18, border: "none", ml: "auto",
+                    "&:hover": { bgcolor: "rgba(0,0,0,0.08)" } }}>
+                  <CloseIcon sx={{ fontSize: 12 }} />
+                </IconButton>
+              </Box>
+            ))}
+          </Stack>
+        )}
+
+        {error && (
+          <Typography sx={{ fontSize: "12px", color: "error.main", px: 0.75 }}>
+            {error}
+          </Typography>
+        )}
+
         <Box sx={{ px: 0.75 }}>
           <textarea
             ref={textareaRef}
@@ -67,6 +213,7 @@ export const ChatInput = ({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onInput={handleInput}
+            onPaste={handlePaste}
             placeholder={placeholder}
             rows={1}
             style={{
@@ -79,12 +226,66 @@ export const ChatInput = ({
             }}
           />
         </Box>
+
         <Stack sx={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <ModelSelector
-            value={modelId}
-            onChange={onModelChange}
-            menuDirection={menuDirection}
-          />
+          <Stack sx={{ flexDirection: "row", alignItems: "center", gap: 0.75 }}>
+            <IconButton
+              size="small"
+              onClick={handleOpenMenu}
+              disabled={uploading}
+              sx={{
+                width: 28, height: 28,
+                border: "1px solid", borderColor: "custom.borderLight",
+                color: "text.secondary",
+                "&:hover": { bgcolor: "action.hover" },
+              }}
+            >
+              {uploading ? <CircularProgress size={14} /> : <AddIcon sx={{ fontSize: 16 }} />}
+            </IconButton>
+
+            <Menu
+              anchorEl={menuAnchor}
+              open={Boolean(menuAnchor)}
+              onClose={handleCloseMenu}
+              anchorOrigin={
+                menuDirection === "up"
+                  ? { vertical: "top", horizontal: "left" }
+                  : { vertical: "bottom", horizontal: "left" }
+              }
+              transformOrigin={
+                menuDirection === "up"
+                  ? { vertical: "bottom", horizontal: "left" }
+                  : { vertical: "top", horizontal: "left" }
+              }
+              slotProps={{
+                paper: {
+                  elevation: 0,
+                  sx: {
+                    borderRadius: "12px",
+                    border: "1px solid", borderColor: "custom.borderLight",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
+                    ...(menuDirection === "up" ? { mb: 0.75 } : { mt: 0.75 }),
+                    minWidth: 140,
+                  },
+                },
+                list: {
+                  sx: { py: 0.5 },
+                },
+              }}
+            >
+              <MenuItem onClick={handleUploadClick} sx={{
+                mx: 0.5, borderRadius: "8px", gap: 1, py: 0.625, px: 1.25,
+                minHeight: "auto",
+                "&:hover": { bgcolor: "action.hover" },
+              }}>
+                <AttachFileOutlinedIcon sx={{ fontSize: 15, color: "text.secondary" }} />
+                <Typography sx={{ fontSize: "13px" }}>Upload file</Typography>
+              </MenuItem>
+            </Menu>
+
+            <ModelSelector value={modelId} onChange={onModelChange} menuDirection={menuDirection} />
+          </Stack>
+
           <IconButton
             onClick={handleSend}
             disabled={!canSend}
