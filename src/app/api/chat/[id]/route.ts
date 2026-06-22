@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
 import { RuangObrolan } from "@/domain/ChatRoom";
-import { LogInteraksi, Attachment } from "@/domain/InteractionLog";
-import { checkQuota } from "@/quota/check";
-import { deductTokens } from "@/quota/deduct";
-import { getModelConfig, callLLM } from "@/providers";
-import { extractBase64 } from "@/providers/types";
-import { extractPdfText } from "@/utils/pdfExtract";
+import { LogInteraksi } from "@/domain/InteractionLog";
 import { ApiResponse } from "@/utils/types";
 
 function getToken(req: NextRequest): string | null {
@@ -16,15 +11,13 @@ function getToken(req: NextRequest): string | null {
   return auth?.startsWith("Bearer ") ? auth.split(" ")[1] : null;
 }
 
-const SYSTEM_PROMPT = `You are a helpful AI assistant. When creating diagrams, ASCII art, tables of characters, or any visual representation using text characters, always wrap them inside triple backtick code blocks (\`\`\`) to preserve spacing and alignment. Never present ASCII art as plain text.`;
-
-export async function POST(
+// GET — ambil history chat
+export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-
     const token = getToken(req);
     const payload = await verifyJwt(token!);
     if (!payload) {
@@ -32,19 +25,6 @@ export async function POST(
         success: false,
         message: "Unauthorized",
       } satisfies ApiResponse, { status: 401 });
-    }
-
-    const { prompt, model_id, attachments } = await req.json() as {
-      prompt: string;
-      model_id: string;
-      attachments?: Attachment[];
-    };
-
-    if (!prompt || !model_id) {
-      return NextResponse.json({
-        success: false,
-        message: "Prompt dan model wajib diisi",
-      } satisfies ApiResponse, { status: 400 });
     }
 
     const chat = await RuangObrolan.findById(id);
@@ -55,95 +35,56 @@ export async function POST(
       } satisfies ApiResponse, { status: 404 });
     }
 
-    const modelConfig = await getModelConfig(model_id);
-    const logs = await LogInteraksi.getByRoomId(id, 20);
-    const history = LogInteraksi.toHistory(logs);
-    let effectivePrompt = prompt;
-    let llmAttachments: Attachment[] = attachments ?? [];
-
-    if (attachments && attachments.length > 0) {
-      if (modelConfig.provider_id === "openai") {
-        const pdfAttachments = attachments.filter((a) => a.type === "pdf");
-        const imageAttachments = attachments.filter((a) => a.type === "image");
-
-        if (pdfAttachments.length > 0) {
-          const pdfTexts: string[] = [];
-          for (const pdf of pdfAttachments) {
-            const base64 = extractBase64(pdf.url);
-            const text = await extractPdfText(base64);
-            pdfTexts.push(`\n\n[Isi dokumen "${pdf.name}"]:\n${text}`);
-          }
-          effectivePrompt = `${prompt}${pdfTexts.join("")}`;
-        }
-        llmAttachments = imageAttachments;
-      }
-    }
-
-    let quotaResult;
-    try {
-      quotaResult = await checkQuota(
-        payload.userId,
-        model_id,
-        effectivePrompt,
-        history,
-        SYSTEM_PROMPT,
-        modelConfig
-      );
-    } catch (err: any) {
-      return NextResponse.json({
-        success: false,
-        message: err.message ?? "Kuota token habis",
-      } satisfies ApiResponse, { status: 403 });
-    }
-
-    const llmResponse = await callLLM(
-      modelConfig,
-      { prompt: effectivePrompt, history, attachments: llmAttachments },
-      quotaResult.remaining_quota,
-      quotaResult.input_tokens
-    );
-
-    await LogInteraksi.simpan({
-      room_id: id,
-      model_id,
-      user_id: payload.userId,
-      prompt_text: prompt, 
-      response_text: llmResponse.text,
-      input_tokens: llmResponse.input_tokens,
-      output_tokens: llmResponse.output_tokens,
-      attachments: attachments ?? [],
-    });
-
-    await deductTokens(
-      quotaResult.balance_id,
-      llmResponse.input_tokens,
-      llmResponse.output_tokens
-    );
-
-    if (chat.title === "New Chat") {
-      await chat.updateTitle(prompt.slice(0, 50));
-    }
+    const history = await LogInteraksi.getAllByRoomId(id);
 
     return NextResponse.json({
       success: true,
-      message: "Pesan berhasil dikirim",
-      data: {
-        response: llmResponse.text,
-        input_tokens: llmResponse.input_tokens,
-        output_tokens: llmResponse.output_tokens,
-        remaining_quota: quotaResult.remaining_quota - llmResponse.input_tokens - llmResponse.output_tokens,
-        warning: quotaResult.warning,
-      },
-    } satisfies ApiResponse<{
-      response: string;
-      input_tokens: number;
-      output_tokens: number;
-      remaining_quota: number;
-      warning: string | undefined;
-    }>);
+      message: "Berhasil ambil history",
+      data: { chat, history },
+    } satisfies ApiResponse<{ chat: typeof chat; history: typeof history }>);
 
   } catch (error) {
-    console.error("POST message error:", error);
+    console.error("GET chat/[id] error:", error);
+    return NextResponse.json({
+      success: false,
+      message: "Terjadi kesalahan server",
+    } satisfies ApiResponse, { status: 500 });
+  }
+}
+
+// DELETE — hapus chat room
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const token = getToken(req);
+    const payload = await verifyJwt(token!);
+    if (!payload) {
+      return NextResponse.json({
+        success: false,
+        message: "Unauthorized",
+      } satisfies ApiResponse, { status: 401 });
+    }
+
+    const chat = await RuangObrolan.findById(id);
+    if (!chat || chat.user_id !== payload.userId) {
+      return NextResponse.json({
+        success: false,
+        message: "Chat tidak ditemukan",
+      } satisfies ApiResponse, { status: 404 });
+    }
+
+    await RuangObrolan.hapus(id);
+
+    return NextResponse.json({
+      success: true,
+      message: "Chat berhasil dihapus",
+    } satisfies ApiResponse);
+
+  } catch (error) {
+    console.error("DELETE chat/[id] error:", error);
     return NextResponse.json({
       success: false,
       message: "Terjadi kesalahan server",

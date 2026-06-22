@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
 import { RuangObrolan } from "@/domain/ChatRoom";
-import { LogInteraksi } from "@/domain/InteractionLog";
+import { LogInteraksi, Attachment } from "@/domain/InteractionLog";
 import { checkQuota } from "@/quota/check";
 import { deductTokens } from "@/quota/deduct";
 import { getModelConfig, callLLM } from "@/providers";
+import { extractBase64 } from "@/providers/types";
+import { extractPdfText } from "@/utils/pdfExtract";
 import { ApiResponse } from "@/utils/types";
 
 function getToken(req: NextRequest): string | null {
@@ -14,8 +16,6 @@ function getToken(req: NextRequest): string | null {
   return auth?.startsWith("Bearer ") ? auth.split(" ")[1] : null;
 }
 
-const SYSTEM_PROMPT = "You are a helpful AI assistant.";
-
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -23,7 +23,6 @@ export async function POST(
   try {
     const { id } = await params;
 
-    // 1. Autentikasi
     const token = getToken(req);
     const payload = await verifyJwt(token!);
     if (!payload) {
@@ -33,7 +32,12 @@ export async function POST(
       } satisfies ApiResponse, { status: 401 });
     }
 
-    const { prompt, model_id } = await req.json();
+    const { prompt, model_id, attachments, timezone } = await req.json() as {
+      prompt: string;
+      model_id: string;
+      attachments?: Attachment[];
+      timezone?: string;
+    };
 
     if (!prompt || !model_id) {
       return NextResponse.json({
@@ -42,7 +46,18 @@ export async function POST(
       } satisfies ApiResponse, { status: 400 });
     }
 
-    // 2. Validasi chat room
+    // Build system prompt dinamis — tanggal sesuai timezone user
+    const tz = timezone || "Asia/Jakarta";
+    const today = new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: tz,
+    });
+
+    const SYSTEM_PROMPT = `You are a helpful AI assistant. Today is ${today} (timezone: ${tz}). When creating diagrams, ASCII art, tables of characters, or any visual representation using text characters, always wrap them inside triple backtick code blocks (\`\`\`) to preserve spacing and alignment. Never present ASCII art as plain text.`;
+
     const chat = await RuangObrolan.findById(id);
     if (!chat || chat.user_id !== payload.userId) {
       return NextResponse.json({
@@ -51,20 +66,36 @@ export async function POST(
       } satisfies ApiResponse, { status: 404 });
     }
 
-    // 3. Ambil config model
     const modelConfig = await getModelConfig(model_id);
-
-    // 4. Ambil history chat
     const logs = await LogInteraksi.getByRoomId(id, 20);
     const history = LogInteraksi.toHistory(logs);
+    let effectivePrompt = prompt;
+    let llmAttachments: Attachment[] = attachments ?? [];
 
-    // 5. Pre-flight check quota
+    if (attachments && attachments.length > 0) {
+      if (modelConfig.provider_id === "openai") {
+        const pdfAttachments = attachments.filter((a) => a.type === "pdf");
+        const imageAttachments = attachments.filter((a) => a.type === "image");
+
+        if (pdfAttachments.length > 0) {
+          const pdfTexts: string[] = [];
+          for (const pdf of pdfAttachments) {
+            const base64 = extractBase64(pdf.url);
+            const text = await extractPdfText(base64);
+            pdfTexts.push(`\n\n[Isi dokumen "${pdf.name}"]:\n${text}`);
+          }
+          effectivePrompt = `${prompt}${pdfTexts.join("")}`;
+        }
+        llmAttachments = imageAttachments;
+      }
+    }
+
     let quotaResult;
     try {
       quotaResult = await checkQuota(
         payload.userId,
         model_id,
-        prompt,
+        effectivePrompt,
         history,
         SYSTEM_PROMPT,
         modelConfig
@@ -76,15 +107,13 @@ export async function POST(
       } satisfies ApiResponse, { status: 403 });
     }
 
-    // 6. Panggil LLM
     const llmResponse = await callLLM(
       modelConfig,
-      { prompt, history },
+      { prompt: effectivePrompt, history, attachments: llmAttachments, system: SYSTEM_PROMPT },
       quotaResult.remaining_quota,
       quotaResult.input_tokens
     );
 
-    // 7. Simpan interaction log
     await LogInteraksi.simpan({
       room_id: id,
       model_id,
@@ -93,16 +122,15 @@ export async function POST(
       response_text: llmResponse.text,
       input_tokens: llmResponse.input_tokens,
       output_tokens: llmResponse.output_tokens,
+      attachments: attachments ?? [],
     });
 
-    // 8. Kurangi token balance
     await deductTokens(
       quotaResult.balance_id,
       llmResponse.input_tokens,
       llmResponse.output_tokens
     );
 
-    // 9. Update title chat kalau masih "New Chat"
     if (chat.title === "New Chat") {
       await chat.updateTitle(prompt.slice(0, 50));
     }
@@ -118,11 +146,11 @@ export async function POST(
         warning: quotaResult.warning,
       },
     } satisfies ApiResponse<{
-        response: string;
-        input_tokens: number;
-        output_tokens: number;
-        remaining_quota: number;
-        warning: string | undefined;
+      response: string;
+      input_tokens: number;
+      output_tokens: number;
+      remaining_quota: number;
+      warning: string | undefined;
     }>);
 
   } catch (error) {
