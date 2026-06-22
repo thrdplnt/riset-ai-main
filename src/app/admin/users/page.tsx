@@ -178,8 +178,8 @@ export default function UsersPage() {
             <TableRow sx={{ bgcolor: "action.hover" }}>
               <TableCell sx={{ fontWeight: 600, width: "15%" }}>Nama</TableCell>
               <TableCell sx={{ fontWeight: 600, width: "18%" }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: 600, width: "12%" }}>Role</TableCell>
-              <TableCell sx={{ fontWeight: 600, width: "13%" }}>Plan</TableCell>
+              {/* <TableCell sx={{ fontWeight: 600, width: "12%" }}>Role</TableCell> */}
+              {/* <TableCell sx={{ fontWeight: 600, width: "13%" }}>Plan</TableCell> */}
               <TableCell sx={{ fontWeight: 600, width: "12%" }}>Terdaftar</TableCell>
               <TableCell align="center" sx={{ fontWeight: 600, width: "15%" }}>Status</TableCell>
               <TableCell align="center" sx={{ fontWeight: 600, width: "15%" }}>Aksi</TableCell>
@@ -205,7 +205,7 @@ export default function UsersPage() {
                       {user.email}
                     </Typography>
                   </TableCell>
-                  <TableCell sx={{ width: "12%" }}>
+                  {/* <TableCell sx={{ width: "12%" }}>
                     <FormControl size="small" fullWidth>
                       <Select
                         value={user.role}
@@ -224,7 +224,7 @@ export default function UsersPage() {
                       <Chip label="Free" size="small"
                         sx={{ bgcolor: "rgba(0,0,0,0.08)", color: "text.secondary", fontWeight: 600, fontSize: "12px" }} />
                     )}
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell sx={{ width: "12%" }}>
                     <Typography variant="body2" color="text.secondary">
                       {formatDate(user.created_at)}
