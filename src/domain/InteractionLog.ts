@@ -5,7 +5,20 @@ export interface Attachment {
   name: string;
   type: "image" | "pdf";
   mime_type: string;
-  url: string; 
+  url: string;
+}
+
+function parseAttachments(raw: unknown): Attachment[] {
+  if (Array.isArray(raw)) return raw as Attachment[];
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 export class LogInteraksi {
@@ -20,7 +33,7 @@ export class LogInteraksi {
   interacted_at: Date;
   attachments: Attachment[];
 
-  constructor(data: InteractionLog & { attachments?: Attachment[] }) {
+  constructor(data: InteractionLog & { attachments?: unknown }) {
     this.id = data.id;
     this.room_id = data.room_id;
     this.model_id = data.model_id;
@@ -30,7 +43,7 @@ export class LogInteraksi {
     this.input_tokens = data.input_tokens;
     this.output_tokens = data.output_tokens;
     this.interacted_at = data.interacted_at;
-    this.attachments = data.attachments ?? [];
+    this.attachments = parseAttachments(data.attachments);
   }
 
   static async simpan(data: {
@@ -57,9 +70,10 @@ export class LogInteraksi {
       )
       RETURNING *
     `;
-    return new LogInteraksi(rows[0] as unknown as InteractionLog & { attachments: Attachment[] });
+    return new LogInteraksi(rows[0] as unknown as InteractionLog & { attachments: unknown });
   }
 
+  // Untuk dikirim ke LLM (context) — TETAP dibatasi 20 biar hemat token
   static async getByRoomId(
     roomId: string,
     limit: number = 20
@@ -70,7 +84,17 @@ export class LogInteraksi {
       ORDER BY interacted_at ASC
       LIMIT ${limit}
     `;
-    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: Attachment[] }));
+    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown }));
+  }
+
+  // FIX BARU — untuk ditampilkan di UI, ambil SEMUA history tanpa limit
+  static async getAllByRoomId(roomId: string): Promise<LogInteraksi[]> {
+    const rows = await sql`
+      SELECT * FROM interaction_logs
+      WHERE room_id = ${roomId}
+      ORDER BY interacted_at ASC
+    `;
+    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown }));
   }
 
   static async getByUserId(userId: string): Promise<LogInteraksi[]> {
@@ -81,7 +105,7 @@ export class LogInteraksi {
       WHERE il.user_id = ${userId}
       ORDER BY il.interacted_at DESC
     `;
-    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: Attachment[] }));
+    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown }));
   }
 
   static toHistory(
@@ -89,7 +113,7 @@ export class LogInteraksi {
   ): { role: "user" | "assistant"; content: string; attachments?: Attachment[] }[] {
     return logs.flatMap((log) => [
       { role: "user" as const, content: log.prompt_text, attachments: log.attachments },
-      { role: "assistant" as const, content: log.response_text, attachments: undefined },
+      { role: "assistant" as const, content: log.response_text },
     ]);
   }
 }

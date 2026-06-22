@@ -42,6 +42,9 @@ export class RuangObrolan {
   }
 
   static async hapus(id: string): Promise<void> {
+    // Hapus interaction_logs dulu (child) sebelum chat_rooms (parent)
+    // karena ada foreign key constraint dari interaction_logs -> chat_rooms
+    await sql`DELETE FROM interaction_logs WHERE room_id = ${id}`;
     await sql`DELETE FROM chat_rooms WHERE id = ${id}`;
   }
 
