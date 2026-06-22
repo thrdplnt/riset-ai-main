@@ -188,7 +188,7 @@ export default function UsersPage() {
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
                   Tidak ada pengguna
                 </TableCell>
               </TableRow>

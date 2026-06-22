@@ -13,7 +13,6 @@ function getToken(req: NextRequest): string | null {
 }
 
 export async function GET(req: NextRequest) {
-  // Ambil daftar plan untuk dropdown
   try {
     const token = getToken(req);
     const payload = await verifyJwt(token!);
@@ -47,12 +46,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Plan tidak ditemukan" } satisfies ApiResponse, { status: 404 });
     }
 
+    const user = await sql`SELECT email, name, role, verified_at FROM users WHERE id = ${user_id}`;
+    if (user.length === 0) {
+      return NextResponse.json({ success: false, message: "User tidak ditemukan" } satisfies ApiResponse, { status: 404 });
+    }
+
     await changePlan(user_id, plan_id);
 
-    const user = await sql`SELECT email, name FROM users WHERE id = ${user_id}`;
+    if (!user[0].verified_at) {
+      await sql`UPDATE users SET verified_at = NOW() WHERE id = ${user_id}`;
+    }
 
-    // Kirim email di background, tidak ditunggu (fire and forget)
-    if (user.length > 0) {
+    if (user[0].role !== "admin") {
       sendSubscriptionActivatedEmail(user[0].email, plan[0].plan_name, plan[0].token_limit)
         .catch((err) => console.error("Gagal kirim email notifikasi:", err));
     }
