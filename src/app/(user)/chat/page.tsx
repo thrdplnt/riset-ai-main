@@ -40,18 +40,17 @@ export default function ChatPage() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [modelId, setModelId] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("lastModelId") ?? "";
-    }
-    return "";
-  });
-  const [modelName, setModelName] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("lastModelName") ?? "";
-    }
-    return "";
-  });
+
+  const [modelId, setModelId] = useState("");
+  const [modelName, setModelName] = useState("");
+
+  useEffect(() => {
+    const savedId = localStorage.getItem("lastModelId");
+    const savedName = localStorage.getItem("lastModelName");
+    if (savedId) setModelId(savedId);
+    if (savedName) setModelName(savedName);
+  }, []);
+
   const [remaining, setRemaining] = useState<number | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -177,7 +176,12 @@ export default function ChatPage() {
       const res = await fetch(`/api/chat/${chatId}/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, model_id: modelId, attachments }),
+        body: JSON.stringify({
+          prompt,
+          model_id: modelId,
+          attachments,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
       const data = await res.json();
 
@@ -195,13 +199,17 @@ export default function ChatPage() {
         }]);
         setRemaining(data.data.remaining_quota);
 
-        setChats((prev) =>
-          prev.map((c) =>
+        setChats((prev) => {
+          const updated = prev.map((c) =>
             c.id === chatId && c.title === "New Chat"
               ? { ...c, title: prompt.slice(0, 50) || c.title }
               : c
-          )
-        );
+          );
+          const target = updated.find((c) => c.id === chatId);
+          if (!target) return updated;
+          const rest = updated.filter((c) => c.id !== chatId);
+          return [target, ...rest];
+        });
       } else {
         setLimitError(data.message);
         setMessages((prev) => [...prev, {
