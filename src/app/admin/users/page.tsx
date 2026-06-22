@@ -2,12 +2,13 @@
 
 import {
   Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogTitle, Divider, FormControl, MenuItem,
+  DialogTitle, Divider, FormControl, IconButton, MenuItem,
   Paper, Select, Stack, Switch, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow,
   Tooltip, Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 
 function getToken() {
   if (typeof window === "undefined") return "";
@@ -43,6 +44,15 @@ interface Plan {
   token_limit: number;
 }
 
+interface SubscriptionHistory {
+  id: string;
+  plan_name: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  limit_snapshot: number;
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -50,6 +60,10 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [assigning, setAssigning] = useState(false);
+  const [history, setHistory] = useState<SubscriptionHistory[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const getHeaders = () => ({
     "Content-Type": "application/json",
@@ -96,25 +110,55 @@ export default function UsersPage() {
     if (res.ok) fetchUsers();
   };
 
-  const handleOpenAssign = (user: User) => {
+  const handleOpenHistory = async (user: User) => {
     setSelectedUser(user);
     setSelectedPlanId("");
+    setErrorMsg("");
     setAssignOpen(true);
+    setLoadingHistory(true);
+    try {
+      const res = await fetch(`/api/admin/subscriptions/history?user_id=${user.id}`, {
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) setHistory(data.data);
+    } finally {
+      setLoadingHistory(false);
+    }
   };
 
-  const handleAssignSubscription = async () => {
+  const handleAssignClick = () => {
+  if (!selectedPlanId) return;
+  setErrorMsg("");
+  setConfirmOpen(true);
+  };
+
+  const handleConfirmAssign = async () => {
     if (!selectedUser || !selectedPlanId) return;
+    setConfirmOpen(false);
     setAssigning(true);
+    setErrorMsg("");
     try {
       const res = await fetch("/api/admin/subscriptions", {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({ user_id: selectedUser.id, plan_id: selectedPlanId }),
       });
-      if (res.ok) {
+      const data = await res.json();
+
+      if (res.ok && data.success) {
         fetchUsers();
-        setAssignOpen(false);
+        const histRes = await fetch(`/api/admin/subscriptions/history?user_id=${selectedUser.id}`, {
+          headers: getHeaders(),
+        });
+        const histData = await histRes.json();
+        if (histData.success) setHistory(histData.data);
+        setSelectedPlanId("");
+      } else {
+        setErrorMsg(data.message ?? "Gagal mengaktifkan plan");
       }
+    } catch {
+      setErrorMsg("Terjadi kesalahan koneksi. Coba lagi.");
     } finally {
       setAssigning(false);
     }
@@ -211,10 +255,11 @@ export default function UsersPage() {
                     </Stack>
                   </TableCell>
                   <TableCell align="center" sx={{ width: "15%" }}>
-                    <Button size="small" variant="outlined" onClick={() => handleOpenAssign(user)}
-                      sx={{ borderRadius: "8px", fontSize: 12 }}>
-                      Atur Plan
-                    </Button>
+                    <Tooltip title="Riwayat & atur plan">
+                      <IconButton size="small" onClick={() => handleOpenHistory(user)}>
+                        <HistoryOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))
@@ -226,13 +271,64 @@ export default function UsersPage() {
       {/* Dialog Assign Plan */}
       <Dialog open={assignOpen} onClose={() => setAssignOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>
-          Atur Plan — {selectedUser?.name}
+          Riwayat plan — {selectedUser?.name}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+
             <Typography variant="body2" color="text.secondary">
-              Pilih paket langganan untuk diaktifkan ke pengguna ini.
+              Riwayat subscription
             </Typography>
+
+            {loadingHistory ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                <CircularProgress size={28} />
+              </Box>
+            ) : history.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
+                Belum ada riwayat subscription
+              </Typography>
+            ) : (
+              <Stack spacing={1}>
+                {history.map((h) => (
+                  <Box key={h.id} sx={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    p: 1.25, borderRadius: "8px",
+                    bgcolor: "action.hover",
+                    opacity: h.is_active ? 1 : 0.6,
+                  }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {h.plan_name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatDate(h.start_date)} &rarr; {formatDate(h.end_date)}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={h.is_active ? "Aktif" : "Berakhir"}
+                      size="small"
+                      sx={{
+                        bgcolor: h.is_active ? "rgba(87,202,34,0.12)" : "rgba(0,0,0,0.08)",
+                        color: h.is_active ? "success.main" : "text.secondary",
+                        fontWeight: 600, fontSize: "11px",
+                      }}
+                    />
+                  </Box>
+                ))}
+              </Stack>
+            )}
+
+            <Divider />
+
+            <Typography variant="body2" color="text.secondary">
+              Aktifkan plan baru
+            </Typography>
+            {errorMsg && (
+              <Typography variant="body2" color="error.main" sx={{ mb: 1 }}>
+                {errorMsg}
+              </Typography>
+            )}
             <FormControl fullWidth size="small">
               <Select
                 value={selectedPlanId}
@@ -250,14 +346,36 @@ export default function UsersPage() {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setAssignOpen(false)} sx={{ borderRadius: "8px" }}>
-            Batal
+            Tutup
           </Button>
-          <Button variant="contained" onClick={handleAssignSubscription}
+          <Button variant="contained" onClick={handleAssignClick}
             disabled={!selectedPlanId || assigning} sx={{ borderRadius: "8px" }}>
             {assigning ? <CircularProgress size={18} color="inherit" /> : "Aktifkan"}
           </Button>
         </DialogActions>
       </Dialog>
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          Konfirmasi ganti plan
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Yakin ingin mengaktifkan plan{" "}
+            <strong>{plans.find((p) => p.id === selectedPlanId)?.plan_name}</strong>{" "}
+            untuk <strong>{selectedUser?.name}</strong>? Plan yang sedang aktif (jika ada)
+            akan dinonaktifkan dan sisa kuota token akan diakumulasikan ke plan baru.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setConfirmOpen(false)} sx={{ borderRadius: "8px" }}>
+            Batal
+          </Button>
+          <Button variant="contained" onClick={handleConfirmAssign} sx={{ borderRadius: "8px" }}>
+            Ya, aktifkan
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
+    
   );
 }
