@@ -6,6 +6,7 @@ const publicRoutes = [
   ROUTES.LOGIN,
   ROUTES.REGISTER,
   ROUTES.FORGOT_PASSWORD,
+  ROUTES.RESET_PASSWORD,
 ];
 
 const adminRoutes: string[] = [

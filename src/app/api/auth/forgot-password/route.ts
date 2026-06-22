@@ -1,4 +1,3 @@
-// app/api/auth/forgot-password/route.ts
 import { Pengguna } from "@/domain/User";
 import { sendPasswordResetEmail } from "@/lib/mailer";
 import crypto from "crypto";
@@ -9,7 +8,6 @@ export async function POST(req: NextRequest) {
   
   const user = await Pengguna.findByEmail(email);
   
-  // Selalu response sama, biar email tidak bisa di-enumerate
   if (!user) {
     return NextResponse.json({ success: true, message: "Jika email terdaftar, link akan dikirim." });
   }
@@ -17,9 +15,15 @@ export async function POST(req: NextRequest) {
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-  await Pengguna.simpanResetToken(user.id, token, expiresAt); // tambah method ini di model
+  await Pengguna.simpanResetToken(user.id, token, expiresAt);
 
-  await sendPasswordResetEmail(email, token);
+  console.log("Sending email to:", email);
+  try {
+    await sendPasswordResetEmail(email, token);
+    console.log("Email sent successfully");
+  } catch (err) {
+    console.error("Email error:", err);
+  }
 
   return NextResponse.json({ success: true, message: "Jika email terdaftar, link akan dikirim." });
 }
