@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  
   const { token, password } = await req.json();
 
   const user = await Pengguna.findByResetToken(token); // tambah method ini di model
