@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
 import sql from "@/db/postgres";
+import { sendSubscriptionActivatedEmail } from "@/lib/mailer";
 import { ApiResponse } from "@/utils/types";
 
 function getToken(req: NextRequest): string | null {
@@ -19,9 +20,15 @@ export async function GET(req: NextRequest) {
     }
 
     const users = await sql`
-      SELECT id, name, email, telp, role, is_active, created_at
-      FROM users
-      ORDER BY created_at DESC
+      SELECT 
+        u.id, u.name, u.email, u.telp, u.role, u.is_active, u.created_at,
+        sp.plan_name as current_plan,
+        spe.end_date as subscription_end
+      FROM users u
+      LEFT JOIN subscription_periods spe 
+        ON spe.user_id = u.id AND spe.is_active = true AND spe.end_date >= CURRENT_DATE
+      LEFT JOIN subscription_plans sp ON sp.id = spe.plan_id
+      ORDER BY u.created_at DESC
     `;
 
     return NextResponse.json({ success: true, message: "OK", data: users } satisfies ApiResponse<Record<string, unknown>[]>);
@@ -44,7 +51,6 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, message: "user_id wajib diisi" } satisfies ApiResponse, { status: 400 });
     }
 
-    // Cegah admin nonaktifkan dirinya sendiri
     if (user_id === payload.userId && is_active === false) {
       return NextResponse.json({ success: false, message: "Tidak bisa menonaktifkan akun sendiri" } satisfies ApiResponse, { status: 400 });
     }
