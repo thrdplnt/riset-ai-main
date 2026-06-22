@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import sql from "@/db/postgres";
+import sql from '@/db/postgres';
 
 async function getBaseUrl(provider_id: string): Promise<string> {
   const rows = await sql`
@@ -7,6 +7,14 @@ async function getBaseUrl(provider_id: string): Promise<string> {
   `;
   if (rows.length === 0) throw new Error(`Provider ${provider_id} tidak ditemukan`);
   return rows[0].base_url;
+}
+
+function guessOpenAIContext(model_id: string): number {
+  if (model_id.includes('gpt-5'))   return 400000;
+  if (model_id.includes('gpt-4o'))  return 128000;
+  if (model_id.includes('gpt-4'))   return 8192;
+  if (model_id.includes('gpt-3.5')) return 16385;
+  return 128000;
 }
 
 async function fetchOpenAIModels() {
@@ -18,7 +26,11 @@ async function fetchOpenAIModels() {
   if (data.error) throw new Error(data.error.message);
   return data.data
     .filter((m: any) => m.id.startsWith('gpt'))
-    .map((m: any) => ({ model_name: m.id, display_name: m.id, max_context_length: m.context_window ?? 4096 }));
+    .map((m: any) => ({
+      model_name: m.id,
+      display_name: m.id,
+      max_context_length: guessOpenAIContext(m.id),
+    }));
 }
 
 async function fetchGeminiModels() {
@@ -35,17 +47,9 @@ async function fetchGeminiModels() {
     }));
 }
 
-const ANTHROPIC_CONTEXT: Record<string, number> = {
-  'claude-opus-4-8':           200000,
-  'claude-opus-4-7':           200000,
-  'claude-opus-4-6':           200000,
-  'claude-sonnet-4-6':         200000,
-  'claude-haiku-4-5-20251001': 200000,
-};
-
 function guessAnthropicContext(model_id: string): number {
   if (model_id.startsWith('claude')) return 200000;
-  return 4096;
+  return 200000;
 }
 
 async function fetchAnthropicModels() {
@@ -61,11 +65,10 @@ async function fetchAnthropicModels() {
   return data.data.map((m: any) => ({
     model_name: m.id,
     display_name: m.id,
-    max_context_length: ANTHROPIC_CONTEXT[m.id] ?? guessAnthropicContext(m.id),
+    max_context_length: guessAnthropicContext(m.id),
   }));
 }
 
-// GET — list semua model dari API provider
 export async function GET() {
   const [openai, gemini, anthropic] = await Promise.allSettled([
     fetchOpenAIModels(),

@@ -6,9 +6,8 @@ import Sidebar from "@/components/layout/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
-export default function SettingsLayout({ children }: { children: React.ReactNode }) {
-  const { logout, user } = useAuth();
-  const role = user?.role === "admin" ? "admin" : "user";
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { logout } = useAuth();
   const router = useRouter();
 
   return (
@@ -37,7 +36,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       </Box>
 
       <Box sx={{ display: "flex", mt: "64px" }}>
-        <Sidebar role={role} onLogout={logout} />
+        <Sidebar role="admin" onLogout={logout} />
         <Box sx={{ ml: "280px", flex: 1, minHeight: "calc(100vh - 64px)", bgcolor: "background.default" }}>
           <Box sx={{ p: 4 }}>
             {children}
