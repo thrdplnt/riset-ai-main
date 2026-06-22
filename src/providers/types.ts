@@ -4,7 +4,7 @@ export interface Attachment {
   name: string;
   type: 'image' | 'pdf';
   mime_type: string;
-  url: string; 
+  url: string;
 }
 
 export interface LLMRequest {
@@ -12,6 +12,7 @@ export interface LLMRequest {
   history?: { role: 'user' | 'assistant'; content: string }[];
   quota_limit?: number;
   attachments?: Attachment[];
+  system?: string;
 }
 
 export interface LLMResponse {
@@ -24,8 +25,8 @@ export interface LLMResponse {
 export interface ModelConfig {
   provider_id: string;
   model_name: string;
-  base_url: string;  
-  max_context_length: number;      
+  base_url: string;
+  max_context_length: number;
 }
 
 export function extractBase64(dataUrl: string): string {

@@ -8,7 +8,6 @@ export async function callOpenAI(
 ): Promise<LLMResponse> {
   const history = req.history ?? [];
 
-  // Build user message content — bisa string biasa atau array (kalau ada attachment)
   let userContent: any = req.prompt;
 
   const images = (req.attachments ?? []).filter((a) => a.type === 'image');
@@ -16,9 +15,6 @@ export async function callOpenAI(
 
   if (images.length > 0 || pdfTexts.length > 0) {
     const contentParts: any[] = [];
-
-    // PDF tidak didukung native OpenAI — sudah di-extract jadi text sebelumnya
-    // dan akan digabung ke prompt di message/route.ts, jadi di sini cuma handle gambar
 
     if (req.prompt) {
       contentParts.push({ type: 'text', text: req.prompt });
@@ -35,6 +31,7 @@ export async function callOpenAI(
   }
 
   const messages = [
+    ...(req.system ? [{ role: 'system', content: req.system }] : []), // ← FIX: system prompt
     ...history,
     { role: 'user', content: userContent },
   ];

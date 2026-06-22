@@ -8,7 +8,6 @@ export async function callAnthropic(
 ): Promise<LLMResponse> {
   const history = req.history ?? [];
 
-  // Build user content — text + attachments
   let userContent: any = req.prompt;
   const attachments = req.attachments ?? [];
 
@@ -46,7 +45,6 @@ export async function callAnthropic(
     { role: 'user', content: userContent },
   ];
 
-  // Dedup consecutive same-role messages (logic asli dipertahankan)
   const messages: { role: string; content: any }[] = [];
   for (const msg of rawMessages) {
     const lastMsg = messages[messages.length - 1];
@@ -68,20 +66,29 @@ export async function callAnthropic(
       'Content-Type': 'application/json',
       'x-api-key': process.env.CLAUDE_API_KEY!,
       'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'pdfs-2024-09-25', // perlu beta header untuk PDF support
+      'anthropic-beta': 'pdfs-2024-09-25',
     },
     body: JSON.stringify({
       model: config.model_name,
       max_tokens: req.quota_limit,
+      system: req.system,
       messages,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }], // ← FIX: aktifkan web search
     }),
   });
 
-  if (!res.ok) throw new Error(`Anthropic error: ${res.status}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Anthropic error response:', errText);
+    throw new Error(`Anthropic error: ${res.status}`);
+  }
+
   const data = await res.json();
+  const textBlocks = data.content.filter((block: any) => block.type === 'text');
+  const text = textBlocks.map((block: any) => block.text).join('\n');
 
   return {
-    text: data.content[0].text,
+    text,
     input_tokens: data.usage.input_tokens,
     output_tokens: data.usage.output_tokens,
     is_truncated: data.stop_reason === 'max_tokens',

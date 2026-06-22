@@ -11,7 +11,6 @@ export async function callGemini(
     parts: [{ text: h.content }],
   }));
 
-  // Build parts untuk user message — text + attachments
   const userParts: any[] = [{ text: req.prompt }];
 
   for (const att of req.attachments ?? []) {
@@ -28,21 +27,33 @@ export async function callGemini(
     { role: 'user', parts: userParts },
   ];
 
+  const body: any = {
+    contents,
+    tools: [{ googleSearch: {} }], // ← FIX: aktifkan web search
+    generationConfig: {
+      maxOutputTokens: req.quota_limit,
+    },
+  };
+
+  if (req.system) {
+    body.systemInstruction = { parts: [{ text: req.system }] };
+  }
+
   const res = await fetch(
     `${config.base_url}/models/${config.model_name}:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          maxOutputTokens: req.quota_limit,
-        },
-      }),
+      body: JSON.stringify(body),
     }
   );
 
-  if (!res.ok) throw new Error(`Gemini error: ${res.status}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Gemini error response:', errText);
+    throw new Error(`Gemini error: ${res.status}`);
+  }
+
   const data = await res.json();
 
   return {
