@@ -30,7 +30,7 @@ interface TokenBadgeProps {
   total: number | null;
   planName?: string;
   expiresAt?: string | null;
-  modelName?: string; // ← tambah ini
+  modelName?: string;
 }
 
 export const TokenBadge = ({
@@ -84,28 +84,21 @@ export const TokenBadge = ({
             "&:hover": { bgcolor: "action.selected" },
           }}
         >
+          {modelName && (
+            <>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                {modelName}
+              </Typography>
+              <Box sx={{
+                width: "1px", height: 12,
+                bgcolor: "custom.borderLight",
+              }} />
+            </>
+          )}
           <DatabaseIcon size={14} />
           <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
             {remaining !== null ? `${remaining.toLocaleString("en-US")} Token` : "—"}
           </Typography>
-          {modelName && (
-            <>
-              <Box sx={{
-                width: "1px", height: 12,
-                bgcolor: "custom.borderLight",
-                mx: 0.25,
-              }} />
-              <Typography variant="body2" color="text.secondary" sx={{
-                fontWeight: 500,
-                maxWidth: 120,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}>
-                {modelName}
-              </Typography>
-            </>
-          )}
         </Box>
       </Tooltip>
 
@@ -149,7 +142,7 @@ export const TokenBadge = ({
               </Typography>
               {modelName && (
                 <Typography variant="body2" color="text.secondary">
-                  Model: {modelName}
+                  {modelName}
                 </Typography>
               )}
               {expiry && (

@@ -194,12 +194,14 @@ const InlineCode = ({ children }: { children?: React.ReactNode }) => (
   </code>
 );
 
-const AttachmentPreview = ({ attachments, isUser }: { attachments: MessageAttachment[]; isUser: boolean }) => {
-  if (!attachments || attachments.length === 0) return null;
+// ── Attachment preview ─────────────────────────────────────
+const AttachmentPreview = ({ attachments, isUser }: { attachments?: MessageAttachment[]; isUser: boolean }) => {
+  const safeAttachments = Array.isArray(attachments) ? attachments : [];
+  if (safeAttachments.length === 0) return null;
 
   return (
     <Stack direction="row" sx={{ gap: 1, flexWrap: "wrap", mb: 1 }}>
-      {attachments.map((att, i) => (
+      {safeAttachments.map((att, i) => (
         att.type === "image" ? (
           <Box
             key={i}
@@ -295,9 +297,7 @@ export const MessageBubble = ({ message, userInitials = "U" }: MessageBubbleProp
           maxWidth: "100%",
           overflow: "hidden",
         }}>
-          {message.attachments && message.attachments.length > 0 && (
-            <AttachmentPreview attachments={message.attachments} isUser={isUser} />
-          )}
+          <AttachmentPreview attachments={message.attachments} isUser={isUser} />
 
           {isUser ? (
             message.content && (
