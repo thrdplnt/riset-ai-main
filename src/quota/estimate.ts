@@ -89,7 +89,7 @@ export async function estimateTotalTokens(
         base_url, model_name, prompt, history, system_prompt
       );
       break;
-    case 'anthropic':
+    case 'claude':
       input_tokens = await countInputTokensAnthropic(
         base_url, model_name, prompt, history, system_prompt
       );

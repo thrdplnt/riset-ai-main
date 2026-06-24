@@ -43,7 +43,7 @@ async function fetchGeminiModels() {
     .map((m: any) => ({
       model_name: m.name.replace('models/', ''),
       display_name: m.displayName,
-      max_context_length: m.inputTokenLimit ?? 4096,
+      max_context_length: m.inputTokenLimit,
     }));
 }
 

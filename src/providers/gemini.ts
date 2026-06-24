@@ -29,11 +29,14 @@ export async function callGemini(
 
   const body: any = {
     contents,
-    tools: [{ googleSearch: {} }], // ← FIX: aktifkan web search
     generationConfig: {
       maxOutputTokens: req.quota_limit,
     },
   };
+
+  if (req.web_search) {
+    body.tools = [{ googleSearch: {} }];
+  }
 
   if (req.system) {
     body.systemInstruction = { parts: [{ text: req.system }] };

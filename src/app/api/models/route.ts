@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import sql from "@/db/postgres";
 import { ApiResponse } from "@/utils/types";
+import { modelSupportsWebSearch } from "@/providers";
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
         m.id,
         m.display_name,
         m.model_name,
+        m.provider_id,
         p.provider_name
       FROM models m
       JOIN providers p ON p.id = m.provider_id
@@ -16,11 +18,16 @@ export async function GET(req: NextRequest) {
       ORDER BY p.provider_name, m.display_name ASC
     `;
 
+    const withWebSearch = models.map((m: any) => ({
+      ...m,
+      supports_web_search: modelSupportsWebSearch(m.provider_id, m.model_name),
+    }));
+
     return NextResponse.json({
       success: true,
       message: "Berhasil ambil daftar model",
-      data: models,
-    } satisfies ApiResponse<typeof models>);
+      data: withWebSearch,
+    } satisfies ApiResponse<typeof withWebSearch>);
 
   } catch (error) {
     console.error("GET models error:", error);
