@@ -9,8 +9,10 @@ import {
   Box, CircularProgress, IconButton, Menu, MenuItem,
   Paper, Stack, Typography,
 } from "@mui/material";
-import { KeyboardEvent, useRef, useState, MouseEvent as ReactMouseEvent } from "react";
+import { KeyboardEvent, useEffect, useRef, useState, MouseEvent as ReactMouseEvent } from "react";
 import { ModelSelector } from "./ModelSelector";
+import LanguageOutlinedIcon from "@mui/icons-material/LanguageOutlined";
+
 
 export interface PendingAttachment {
   name: string;
@@ -20,12 +22,14 @@ export interface PendingAttachment {
 }
 
 interface ChatInputProps {
-  onSend: (message: string, attachments: PendingAttachment[]) => void;
+  onSend: (message: string, attachments: PendingAttachment[], webSearch: boolean) => void;
   modelId: string;
   onModelChange: (modelId: string, modelName: string) => void;
   loading?: boolean;
   placeholder?: string;
   menuDirection?: "up" | "down";
+  supportsWebSearch?: boolean;
+  blockAttachOnWebSearch?: boolean;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -46,9 +50,12 @@ export const ChatInput = ({
   loading = false,
   placeholder = "Ask anything...",
   menuDirection = "up",
+  supportsWebSearch = false,
+  blockAttachOnWebSearch = false,
 }: ChatInputProps) => {
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const [webSearch, setWebSearch] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
@@ -63,7 +70,28 @@ export const ChatInput = ({
     fileInputRef.current?.click();
   };
 
+  useEffect(() => {
+    if (!supportsWebSearch) setWebSearch(false);
+  }, [supportsWebSearch]);
+
+  const handleToggleWebSearch = () => {
+    if (!supportsWebSearch) return;
+
+    if (!webSearch && blockAttachOnWebSearch && attachments.length > 0) {
+      setError("Hapus lampiran file untuk mengaktifkan pencarian web pada model ini");
+      return;
+    }
+    setError("");
+    setWebSearch((v) => !v);
+  };
+
   const addFiles = async (fileList: File[]) => {
+
+    if (webSearch && blockAttachOnWebSearch) {
+      setError("Pencarian web pada model ini tidak dapat digunakan bersamaan dengan lampiran file");
+      return;
+    }
+
     setError("");
     setUploading(true);
 
@@ -125,7 +153,7 @@ export const ChatInput = ({
   const handleSend = () => {
     const trimmed = value.trim();
     if ((!trimmed && attachments.length === 0) || loading) return;
-    onSend(trimmed, attachments);
+    onSend(trimmed, attachments, webSearch); 
     setValue("");
     setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -232,7 +260,7 @@ export const ChatInput = ({
             <IconButton
               size="small"
               onClick={handleOpenMenu}
-              disabled={uploading}
+              disabled={uploading || webSearch && blockAttachOnWebSearch}
               sx={{
                 width: 28, height: 28,
                 border: "1px solid", borderColor: "custom.borderLight",
@@ -285,6 +313,23 @@ export const ChatInput = ({
 
             <ModelSelector value={modelId} onChange={onModelChange} menuDirection={menuDirection} />
           </Stack>
+          
+          <IconButton
+            size="small"
+            onClick={handleToggleWebSearch}
+            disabled={!supportsWebSearch}
+            sx={{
+              width: 28, height: 28,
+              border: "1px solid",
+              borderColor: webSearch ? "primary.main" : "custom.borderLight",
+              color: webSearch ? "primary.main" : "text.secondary",
+              bgcolor: webSearch ? "rgba(33,150,243,0.08)" : "transparent",
+              opacity: supportsWebSearch ? 1 : 0.4,
+              "&:hover": { bgcolor: webSearch ? "rgba(33,150,243,0.12)" : "action.hover" },
+            }}
+          >
+            <LanguageOutlinedIcon sx={{ fontSize: 16 }} />
+          </IconButton>
 
           <IconButton
             onClick={handleSend}

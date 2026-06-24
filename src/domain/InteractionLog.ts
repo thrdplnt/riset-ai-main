@@ -55,18 +55,19 @@ export class LogInteraksi {
     input_tokens: number;
     output_tokens: number;
     attachments?: Attachment[];
+    used_web_search?: boolean;
   }): Promise<LogInteraksi> {
     const id = crypto.randomUUID();
     const rows = await sql`
       INSERT INTO interaction_logs (
         id, room_id, model_id, user_id,
         prompt_text, response_text,
-        input_tokens, output_tokens, interacted_at, attachments
+        input_tokens, output_tokens, interacted_at, attachments, used_web_search
       ) VALUES (
         ${id}, ${data.room_id}, ${data.model_id}, ${data.user_id},
         ${data.prompt_text}, ${data.response_text},
         ${data.input_tokens}, ${data.output_tokens}, NOW(),
-        ${JSON.stringify(data.attachments ?? [])}
+        ${JSON.stringify(data.attachments ?? [])}, ${data.used_web_search ?? false}
       )
       RETURNING *
     `;
@@ -87,7 +88,6 @@ export class LogInteraksi {
     return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown }));
   }
 
-  // FIX BARU — untuk ditampilkan di UI, ambil SEMUA history tanpa limit
   static async getAllByRoomId(roomId: string): Promise<LogInteraksi[]> {
     const rows = await sql`
       SELECT * FROM interaction_logs

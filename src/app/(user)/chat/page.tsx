@@ -57,6 +57,8 @@ export default function ChatPage() {
   const [isFree, setIsFree] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [limitError, setLimitError] = useState<string | null>(null);
+  const [supportsWebSearch, setSupportsWebSearch] = useState(false);
+  const [allModels, setAllModels] = useState<any[]>([]);
 
   const userInitials = user?.name
     ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -66,7 +68,16 @@ export default function ChatPage() {
     fetch("/api/chat")
       .then((r) => r.json())
       .then((data) => { if (data.success) setChats(data.data); });
+
+    fetch("/api/models")
+    .then((r) => r.json())
+    .then((data) => { if (data.success) setAllModels(data.data); });
   }, []);
+
+  useEffect(() => {
+    const current = allModels.find((m) => m.id === modelId);
+    setSupportsWebSearch(current?.supports_web_search ?? false);
+  }, [modelId, allModels]);
 
   useEffect(() => {
     fetch("/api/quota/check")
@@ -139,7 +150,7 @@ export default function ChatPage() {
     localStorage.setItem("lastModelName", name);
   };
 
-  const handleSend = async (prompt: string, attachments: PendingAttachment[]) => {
+  const handleSend = async (prompt: string, attachments: PendingAttachment[], webSearch: boolean) => {
     if (isFree) {
       setLimitError("Plan Free tidak dapat mengakses AI. Hubungi admin untuk upgrade.");
       return;
@@ -181,6 +192,7 @@ export default function ChatPage() {
           model_id: modelId,
           attachments,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          web_search: webSearch,
         }),
       });
       const data = await res.json();
@@ -226,6 +238,14 @@ export default function ChatPage() {
       setLoading(false);
     }
   };
+
+  const [blockAttachOnWebSearch, setBlockAttachOnWebSearch] = useState(false);
+
+    useEffect(() => {
+      const current = allModels.find((m) => m.id === modelId);
+      setSupportsWebSearch(current?.supports_web_search ?? false);
+      setBlockAttachOnWebSearch(current?.provider_id === "openai"); 
+    }, [modelId, allModels]);
 
   const showEmptyState = !activeChatId || messages.length === 0;
 
@@ -298,6 +318,8 @@ export default function ChatPage() {
                   onModelChange={handleModelChange}
                   loading={loading}
                   menuDirection="down"
+                  supportsWebSearch={supportsWebSearch}
+                  blockAttachOnWebSearch={blockAttachOnWebSearch}
                 />
               </Box>
             </Box>
@@ -379,6 +401,7 @@ export default function ChatPage() {
                   onModelChange={handleModelChange}
                   loading={loading}
                   menuDirection="up"
+                  supportsWebSearch={supportsWebSearch}
                 />
               </Box>
             </>
