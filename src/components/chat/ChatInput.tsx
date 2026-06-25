@@ -5,20 +5,19 @@ import AddIcon from "@mui/icons-material/Add";
 import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import LanguageOutlinedIcon from "@mui/icons-material/LanguageOutlined";
 import {
   Box, CircularProgress, IconButton, Menu, MenuItem,
   Paper, Stack, Typography,
 } from "@mui/material";
 import { KeyboardEvent, useEffect, useRef, useState, MouseEvent as ReactMouseEvent } from "react";
 import { ModelSelector } from "./ModelSelector";
-import LanguageOutlinedIcon from "@mui/icons-material/LanguageOutlined";
-
 
 export interface PendingAttachment {
   name: string;
   type: "image" | "pdf";
   mime_type: string;
-  url: string; // base64 data URL
+  url: string;
 }
 
 interface ChatInputProps {
@@ -30,9 +29,10 @@ interface ChatInputProps {
   menuDirection?: "up" | "down";
   supportsWebSearch?: boolean;
   blockAttachOnWebSearch?: boolean;
+  disabled?: boolean;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp,application/pdf";
 
 const fileToDataUrl = (file: File): Promise<string> =>
@@ -52,6 +52,7 @@ export const ChatInput = ({
   menuDirection = "up",
   supportsWebSearch = false,
   blockAttachOnWebSearch = false,
+  disabled = false,
 }: ChatInputProps) => {
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
@@ -75,7 +76,7 @@ export const ChatInput = ({
   }, [supportsWebSearch]);
 
   const handleToggleWebSearch = () => {
-    if (!supportsWebSearch) return;
+    if (!supportsWebSearch || disabled) return;
 
     if (!webSearch && blockAttachOnWebSearch && attachments.length > 0) {
       setError("Hapus lampiran file untuk mengaktifkan pencarian web pada model ini");
@@ -86,6 +87,7 @@ export const ChatInput = ({
   };
 
   const addFiles = async (fileList: File[]) => {
+    if (disabled) return;
 
     if (webSearch && blockAttachOnWebSearch) {
       setError("Pencarian web pada model ini tidak dapat digunakan bersamaan dengan lampiran file");
@@ -133,10 +135,11 @@ export const ChatInput = ({
   };
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (disabled) return;
     const items = e.clipboardData.items;
     const fileItems = Array.from(items).filter((item) => item.kind === "file");
 
-    if (fileItems.length === 0) return; // biarkan paste text normal
+    if (fileItems.length === 0) return;
 
     e.preventDefault();
     const files = fileItems
@@ -152,8 +155,8 @@ export const ChatInput = ({
 
   const handleSend = () => {
     const trimmed = value.trim();
-    if ((!trimmed && attachments.length === 0) || loading) return;
-    onSend(trimmed, attachments, webSearch); 
+    if ((!trimmed && attachments.length === 0) || loading || disabled) return;
+    onSend(trimmed, attachments, webSearch);
     setValue("");
     setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -173,7 +176,7 @@ export const ChatInput = ({
     el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   };
 
-  const canSend = (value.trim().length > 0 || attachments.length > 0) && !loading;
+  const canSend = (value.trim().length > 0 || attachments.length > 0) && !loading && !disabled;
 
   return (
     <Paper elevation={0} sx={{
@@ -184,6 +187,7 @@ export const ChatInput = ({
       bgcolor: "background.paper",
       px: 1, pt: 1.5, pb: 1,
       width: "100%",
+      opacity: disabled ? 0.7 : 1,
     }}>
       <input
         ref={fileInputRef}
@@ -242,15 +246,17 @@ export const ChatInput = ({
             onKeyDown={handleKeyDown}
             onInput={handleInput}
             onPaste={handlePaste}
-            placeholder={placeholder}
+            placeholder={disabled ? "Upgrade ke Basic untuk mulai chat..." : placeholder}
+            disabled={disabled}
             rows={1}
             style={{
               width: "100%", border: "none", outline: "none",
               background: "transparent", resize: "none",
-              fontFamily: '"Inter", Helvetica, sans-serif',
+              fontFamily: 'var(--font-inter), Helvetica, sans-serif',
               fontSize: "15px", fontWeight: 400, lineHeight: "24px",
               color: "#020817", padding: 0, minHeight: "24px",
               maxHeight: "180px", overflowY: "auto",
+              cursor: disabled ? "not-allowed" : "text",
             }}
           />
         </Box>
@@ -260,7 +266,7 @@ export const ChatInput = ({
             <IconButton
               size="small"
               onClick={handleOpenMenu}
-              disabled={uploading || webSearch && blockAttachOnWebSearch}
+              disabled={uploading || (webSearch && blockAttachOnWebSearch) || disabled}
               sx={{
                 width: 28, height: 28,
                 border: "1px solid", borderColor: "custom.borderLight",
@@ -312,24 +318,30 @@ export const ChatInput = ({
             </Menu>
 
             <ModelSelector value={modelId} onChange={onModelChange} menuDirection={menuDirection} />
+
+            <Box
+              component="button"
+              onClick={handleToggleWebSearch}
+              disabled={!supportsWebSearch || disabled}
+              sx={{
+                display: "flex", alignItems: "center", gap: 0.625,
+                height: 30, px: 1.5, borderRadius: "100px",
+                border: "1px solid",
+                borderColor: webSearch ? "primary.main" : "custom.borderLight",
+                color: webSearch ? "primary.main" : "text.secondary",
+                bgcolor: webSearch ? "rgba(33,150,243,0.08)" : "transparent",
+                opacity: supportsWebSearch ? 1 : 0.4,
+                cursor: supportsWebSearch && !disabled ? "pointer" : "not-allowed",
+                fontWeight: 500, fontSize: "13px",
+                fontFamily: 'var(--font-inter), Helvetica, sans-serif',
+                transition: "background 0.15s",
+                "&:hover": { bgcolor: webSearch ? "rgba(33,150,243,0.12)" : "action.hover" },
+              }}
+            >
+              <LanguageOutlinedIcon sx={{ fontSize: 15 }} />
+              Web search
+            </Box>
           </Stack>
-          
-          <IconButton
-            size="small"
-            onClick={handleToggleWebSearch}
-            disabled={!supportsWebSearch}
-            sx={{
-              width: 28, height: 28,
-              border: "1px solid",
-              borderColor: webSearch ? "primary.main" : "custom.borderLight",
-              color: webSearch ? "primary.main" : "text.secondary",
-              bgcolor: webSearch ? "rgba(33,150,243,0.08)" : "transparent",
-              opacity: supportsWebSearch ? 1 : 0.4,
-              "&:hover": { bgcolor: webSearch ? "rgba(33,150,243,0.12)" : "action.hover" },
-            }}
-          >
-            <LanguageOutlinedIcon sx={{ fontSize: 16 }} />
-          </IconButton>
 
           <IconButton
             onClick={handleSend}

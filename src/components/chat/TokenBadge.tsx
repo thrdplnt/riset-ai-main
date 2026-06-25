@@ -2,8 +2,7 @@
 
 import ArrowForwardIosOutlinedIcon from "@mui/icons-material/ArrowForwardIosOutlined";
 import {
-  Box, Divider, LinearProgress,
-  Link, Popover, Stack, Tooltip, Typography,
+  Box, Divider, Link, Popover, Stack, Typography,
 } from "@mui/material";
 import { MouseEvent, useState } from "react";
 import { ROUTES } from "@/routes";
@@ -46,10 +45,6 @@ export const TokenBadge = ({
   const handleOpen = (e: MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
 
-  const percent = remaining !== null && total !== null && total > 0
-    ? Math.round((remaining / total) * 100)
-    : null;
-
   const formatNumber = (n: number) => n.toLocaleString("en-US");
 
   const expiry = expiresAt
@@ -61,46 +56,36 @@ export const TokenBadge = ({
   return (
     <>
       {/* Badge */}
-      <Tooltip title={
-        remaining !== null && total !== null
-          ? `${remaining.toLocaleString()} / ${total.toLocaleString()} tokens remaining`
-          : "No active subscription"
-      }>
-        <Box
-          onClick={handleOpen}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 0.75,
-            px: 1.5,
-            py: 0.5,
-            bgcolor: open ? "action.selected" : "action.hover",
-            borderRadius: "100px",
-            border: "1px solid",
-            borderColor: "custom.borderLight",
-            cursor: "pointer",
-            transition: "background 0.15s",
-            color: "text.secondary",
-            "&:hover": { bgcolor: "action.selected" },
-          }}
-        >
-          {modelName && (
-            <>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {modelName}
-              </Typography>
-              <Box sx={{
-                width: "1px", height: 12,
-                bgcolor: "custom.borderLight",
-              }} />
-            </>
-          )}
-          <DatabaseIcon size={14} />
-          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-            {remaining !== null ? `${remaining.toLocaleString("en-US")} Token` : "—"}
-          </Typography>
-        </Box>
-      </Tooltip>
+      <Box
+        onClick={handleOpen}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0.75,
+          px: 1.5,
+          py: 0.5,
+          bgcolor: "background.paper",
+          borderRadius: "8px",
+          border: "1px solid",
+          borderColor: "custom.borderLight",
+          cursor: "pointer",
+          transition: "background 0.15s",
+          color: "text.secondary",
+          "&:hover": { bgcolor: "action.hover" },
+        }}
+      >
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          {modelName || "—"}
+        </Typography>
+        <Box sx={{
+          width: "1px", height: 12,
+          bgcolor: "custom.borderLight",
+        }} />
+        <DatabaseIcon size={14} />
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          {remaining !== null ? `${remaining.toLocaleString("en-US")} Token` : "— Token"}
+        </Typography>
+      </Box>
 
       {/* Popover */}
       <Popover
@@ -113,7 +98,7 @@ export const TokenBadge = ({
           paper: {
             elevation: 0,
             sx: {
-              mt: 1, minWidth: 280,
+              mt: 1, minWidth: 240,
               borderRadius: "14px",
               border: "1px solid", borderColor: "custom.borderLight",
               boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
@@ -122,82 +107,52 @@ export const TokenBadge = ({
           },
         }}
       >
-        <Box sx={{ px: 2.5, py: 2, bgcolor: "action.hover" }}>
-          <Typography variant="body2" color="text.secondary">Plan</Typography>
-          <Typography sx={{ fontWeight: 700, fontSize: "16px", color: "text.primary" }}>
+        <Box sx={{ px: 2, py: 1.5, bgcolor: "action.hover" }}>
+          <Typography variant="caption" color="text.secondary">Plan</Typography>
+          <Typography sx={{ fontWeight: 700, fontSize: "14px", color: "text.primary" }}>
             {planName}
           </Typography>
         </Box>
 
         <Divider />
 
-        <Box sx={{ px: 2.5, py: 2 }}>
-          <Stack sx={{
-            flexDirection: "row", justifyContent: "space-between",
-            alignItems: "flex-start", mb: 1,
-          }}>
-            <Box>
-              <Typography sx={{ fontWeight: 600, fontSize: "14px", color: "text.primary" }}>
-                Tokens Quota
-              </Typography>
-              {modelName && (
-                <Typography variant="body2" color="text.secondary">
-                  {modelName}
-                </Typography>
-              )}
-              {expiry && (
-                <Typography variant="body2" color="text.secondary">
-                  Expires {expiry}
-                </Typography>
-              )}
-            </Box>
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <Stack sx={{ gap: 0.5 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: "13px", color: "text.primary" }}>
+              Tokens Quota
+            </Typography>
             <Stack sx={{
               flexDirection: "row", alignItems: "center",
               gap: 0.5, color: "text.secondary",
             }}>
               <DatabaseIcon size={13} />
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+              <Typography variant="body2" color="text.secondary"
+                sx={{ fontWeight: 500, fontSize: "13px" }}>
                 {remaining !== null ? `${formatNumber(remaining)} Token left` : "—"}
               </Typography>
             </Stack>
+            {expiry && (
+              <Typography variant="caption" color="text.secondary">
+                Expires {expiry}
+              </Typography>
+            )}
           </Stack>
-
-          {percent !== null && (
-            <LinearProgress
-              variant="determinate"
-              value={percent}
-              sx={{
-                height: 6, borderRadius: "100px",
-                bgcolor: "rgba(0,0,0,0.08)",
-                "& .MuiLinearProgress-bar": {
-                  borderRadius: "100px",
-                  bgcolor: percent < 20 ? "error.main" : "primary.main",
-                },
-              }}
-            />
-          )}
-
-          {remaining !== null && total !== null && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-              {percent}% left · {formatNumber(remaining)} / {formatNumber(total)}
-            </Typography>
-          )}
         </Box>
 
         <Divider />
 
-        <Box sx={{ px: 2.5, py: 1.5 }}>
+        <Box sx={{ px: 2, py: 1.25 }}>
           <Link
             href={ROUTES.SETTINGS_TOKEN_USAGE}
             underline="none"
             sx={{
               display: "flex", alignItems: "center", gap: 0.5,
-              fontSize: "13.5px", fontWeight: 600, color: "text.primary",
+              fontSize: "13px", fontWeight: 600, color: "text.primary",
               "&:hover": { color: "primary.main" },
             }}
           >
             Check Usage
-            <ArrowForwardIosOutlinedIcon sx={{ fontSize: 11 }} />
+            <ArrowForwardIosOutlinedIcon sx={{ fontSize: 10 }} />
           </Link>
         </Box>
       </Popover>

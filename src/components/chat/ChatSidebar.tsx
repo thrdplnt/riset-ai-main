@@ -147,7 +147,12 @@ export const ChatSidebar = ({
             sx={{ width: 26, height: 26, borderRadius: "7px", objectFit: "cover" }}
           />
           <Typography
-            sx={{ fontWeight: 600, fontSize: "14px", color: "text.primary" }}
+            sx={{
+              fontFamily: 'var(--font-poppins), sans-serif',
+              fontWeight: 600,
+              fontSize: "16px",
+              color: "text.primary",
+            }}
           >
             RISET AI
           </Typography>
@@ -208,6 +213,7 @@ export const ChatSidebar = ({
       <Typography
         sx={{
           px: 2, pt: 1, pb: 0.5,
+          fontFamily: 'var(--font-manrope), sans-serif',
           fontSize: "11px", fontWeight: 700,
           color: "text.secondary",
           textTransform: "uppercase",
@@ -291,7 +297,7 @@ export const ChatSidebar = ({
           paper: {
             elevation: 0,
             sx: {
-              borderRadius: "10px",
+              borderRadius: "12px",
               border: "1px solid",
               borderColor: "custom.borderLight",
               boxShadow: "0px 4px 16px rgba(0,0,0,0.08)",
@@ -299,13 +305,17 @@ export const ChatSidebar = ({
               mt: 0.5,
             },
           },
+          list: {
+            sx: { py: 0.5 },
+          },
         }}
       >
         <MenuItem
           onClick={handleDelete}
           sx={{
-            fontSize: "13px", py: 0.875, px: 1.5, gap: 1,
-            borderRadius: "6px", mx: 0.5,
+            fontSize: "13px", py: 0.625, px: 1.25, gap: 1,
+            borderRadius: "8px", mx: 0.5,
+            minHeight: "auto",
             color: "error.main",
             "&:hover": { bgcolor: "rgba(211,47,47,0.05)" },
           }}

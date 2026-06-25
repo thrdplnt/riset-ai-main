@@ -57,7 +57,6 @@ export const ModelSelector = ({
 
   return (
     <>
-      <Tooltip title="Select AI model">
         <Box
           component="button"
           onClick={handleOpen}
@@ -69,19 +68,15 @@ export const ModelSelector = ({
             bgcolor: open ? "action.hover" : "transparent",
             cursor: "pointer",
             fontWeight: 500, fontSize: "13px",
+            fontFamily: 'var(--font-inter), Helvetica, sans-serif',
             color: "text.secondary",
             transition: "background 0.15s",
             "&:hover": { bgcolor: "action.hover" },
           }}
         >
           {selected?.display_name ?? "Select model"}
-          <ExpandMoreIcon sx={{
-            fontSize: 14, color: "text.secondary",
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform 0.2s",
-          }} />
+          <ExpandMoreIcon sx={{ fontSize: 16 }} />
         </Box>
-      </Tooltip>
 
       <Menu
         anchorEl={anchorEl} open={open} onClose={handleClose}
@@ -91,46 +86,40 @@ export const ModelSelector = ({
             elevation: 0,
             sx: {
               minWidth: 200, maxWidth: 290,
-              borderRadius: "14px",
+              borderRadius: "12px",
               border: "1px solid",
               borderColor: "custom.borderLight",
               boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
-              overflow: "hidden", maxHeight: 380, py: 0.5,
+              overflow: "hidden", maxHeight: 380,
               ...(menuDirection === "up" ? { mb: 0.75 } : { mt: 0.75 }),
             },
           },
+          list: {
+            sx: { py: 0.5 },
+          },
         }}
       >
-        {models.length === 0 ? (
-          <MenuItem disabled sx={{ mx: 0.75, borderRadius: "8px" }}>
-            <Typography variant="body2" color="text.secondary">
-              Tidak ada model tersedia
-            </Typography>
+        {models.map((model) => (
+          <MenuItem
+            key={model.id}
+            selected={model.id === value}
+            onClick={() => handleSelect(model)}
+            sx={{
+              mx: 0.5, borderRadius: "8px", mb: 0.25,
+              py: 0.625, px: 1.25,
+              minHeight: "auto",
+              "&.Mui-selected": { bgcolor: "action.selected" },
+              "&:hover": { bgcolor: "action.hover" },
+            }}
+          >
+            <Stack sx={{ flexDirection: "row", alignItems: "center", gap: 1, width: "100%" }}>
+              <Typography variant="body2" sx={{ flex: 1, fontWeight: 500, fontSize: "13px" }}>
+                {model.display_name}
+              </Typography>
+              ...
+            </Stack>
           </MenuItem>
-        ) : (
-          models.map((model) => (
-            <MenuItem
-              key={model.id}
-              selected={model.id === value}
-              onClick={() => handleSelect(model)}
-              sx={{
-                mx: 0.75, borderRadius: "8px", mb: 0.25,
-                py: 0.875, px: 1.25,
-                "&.Mui-selected": { bgcolor: "action.selected" },
-                "&:hover": { bgcolor: "action.hover" },
-              }}
-            >
-              <Stack sx={{ flexDirection: "row", alignItems: "center", gap: 1, width: "100%" }}>
-                <Typography variant="body1" sx={{ flex: 1, fontWeight: 500 }}>
-                  {model.display_name}
-                </Typography>
-                {model.id === value && (
-                  <CheckIcon sx={{ fontSize: 14, color: "text.primary", flexShrink: 0 }} />
-                )}
-              </Stack>
-            </MenuItem>
-          ))
-        )}
+        ))}
       </Menu>
     </>
   );

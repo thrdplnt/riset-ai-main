@@ -101,7 +101,12 @@ export const UserMenu = ({ user, onLogout }: UserMenuProps) => {
 
         <Box sx={{ py: 0.75 }}>
           <MenuItem sx={menuItemSx} onClick={() => {
-            router.push(ROUTES.SETTINGS_ACCOUNT + "?tab=upgrade"); handleClose();
+            const phoneNumber = "6281234567890";
+            const message = encodeURIComponent(
+              `Halo, saya ${user?.name ?? "User"} (${user?.email ?? ""}) ingin upgrade plan ke Basic. Mohon info lebih lanjut.`
+            );
+            window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
+            handleClose();
           }}>
             <SparklesOutlinedIcon sx={{ fontSize: 15, color: "text.secondary" }} />
             <Typography sx={{ fontSize: "13.5px", color: "text.primary" }}>
