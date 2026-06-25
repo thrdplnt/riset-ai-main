@@ -66,7 +66,7 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Inter", Helvetica, Arial, sans-serif',
+    fontFamily: 'var(--font-inter), Helvetica, Arial, sans-serif',
     h1: { fontSize: "22.5px", fontWeight: 600, lineHeight: "32px" },
     h3: { fontSize: "22.5px", fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.6px" },
     subtitle1: { fontSize: "13.5px", fontWeight: 500, lineHeight: "24px" },
