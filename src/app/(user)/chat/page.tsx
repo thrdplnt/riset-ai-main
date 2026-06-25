@@ -44,13 +44,6 @@ export default function ChatPage() {
   const [modelId, setModelId] = useState("");
   const [modelName, setModelName] = useState("");
 
-  useEffect(() => {
-    const savedId = localStorage.getItem("lastModelId");
-    const savedName = localStorage.getItem("lastModelName");
-    if (savedId) setModelId(savedId);
-    if (savedName) setModelName(savedName);
-  }, []);
-
   const [remaining, setRemaining] = useState<number | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,6 +52,8 @@ export default function ChatPage() {
   const [limitError, setLimitError] = useState<string | null>(null);
   const [supportsWebSearch, setSupportsWebSearch] = useState(false);
   const [allModels, setAllModels] = useState<any[]>([]);
+  const [planName, setPlanName] = useState<string | undefined>(undefined);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   const userInitials = user?.name
     ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -94,6 +89,8 @@ export default function ChatPage() {
         if (data.success && data.data) {
           setRemaining(data.data.remaining_quota);
           setTotal(data.data.total_quota);
+          setPlanName(data.data.plan_name ?? undefined);
+          setExpiresAt(data.data.expires_at ?? null);
         }
       });
   }, [modelId]);
@@ -106,6 +103,10 @@ export default function ChatPage() {
     setActiveChatId(null);
     setMessages([]);
     setLimitError(null);
+    setModelId("");
+    setModelName("");
+    setRemaining(null);
+    setTotal(null);
   };
 
   const handleSelectChat = async (id: string) => {
@@ -128,6 +129,19 @@ export default function ChatPage() {
         },
       ]);
       setMessages(history);
+
+      const lastLog = data.data.history[data.data.history.length - 1];
+      if (lastLog?.model_id && lastLog?.model_display_name) {
+        setModelId(lastLog.model_id);
+        setModelName(lastLog.model_display_name);
+      } else {
+        const savedId = localStorage.getItem("lastModelId");
+        const savedName = localStorage.getItem("lastModelName");
+        if (savedId && savedName) {
+          setModelId(savedId);
+          setModelName(savedName);
+        }
+      }
     }
   };
 
@@ -282,7 +296,13 @@ export default function ChatPage() {
             justifyContent: "flex-end",
             gap: 1.5,
           }}>
-            <TokenBadge remaining={remaining} total={total} modelName={modelName} />
+            <TokenBadge
+              remaining={remaining}
+              total={total}
+              modelName={modelName}
+              planName={planName}
+              expiresAt={expiresAt}
+            />
             <UserMenu user={user} onLogout={logout} />
           </Toolbar>
         </AppBar>
@@ -320,6 +340,7 @@ export default function ChatPage() {
                   menuDirection="down"
                   supportsWebSearch={supportsWebSearch}
                   blockAttachOnWebSearch={blockAttachOnWebSearch}
+                  disabled={isFree}
                 />
               </Box>
             </Box>
@@ -402,6 +423,7 @@ export default function ChatPage() {
                   loading={loading}
                   menuDirection="up"
                   supportsWebSearch={supportsWebSearch}
+                  disabled={isFree}
                 />
               </Box>
             </>

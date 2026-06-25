@@ -32,8 +32,9 @@ export class LogInteraksi {
   output_tokens: number;
   interacted_at: Date;
   attachments: Attachment[];
+  model_display_name?: string;
 
-  constructor(data: InteractionLog & { attachments?: unknown }) {
+  constructor(data: InteractionLog & { attachments?: unknown; model_display_name?: string  }) {
     this.id = data.id;
     this.room_id = data.room_id;
     this.model_id = data.model_id;
@@ -44,6 +45,7 @@ export class LogInteraksi {
     this.output_tokens = data.output_tokens;
     this.interacted_at = data.interacted_at;
     this.attachments = parseAttachments(data.attachments);
+    this.model_display_name = data.model_display_name;
   }
 
   static async simpan(data: {
@@ -90,11 +92,13 @@ export class LogInteraksi {
 
   static async getAllByRoomId(roomId: string): Promise<LogInteraksi[]> {
     const rows = await sql`
-      SELECT * FROM interaction_logs
-      WHERE room_id = ${roomId}
-      ORDER BY interacted_at ASC
+      SELECT il.*, m.display_name as model_display_name
+      FROM interaction_logs il
+      JOIN models m ON m.id = il.model_id
+      WHERE il.room_id = ${roomId}
+      ORDER BY il.interacted_at ASC
     `;
-    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown }));
+    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown; model_display_name: string }));
   }
 
   static async getByUserId(userId: string): Promise<LogInteraksi[]> {
