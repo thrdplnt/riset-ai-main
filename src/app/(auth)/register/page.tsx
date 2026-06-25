@@ -21,16 +21,51 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const validate = (): string | null => {
+    if (!name || !telp || !email || !password) {
+      return "Semua field wajib diisi.";
+    }
+
+    // Nama: minimal 2 karakter, hanya huruf dan spasi
+    const nameRegex = /^[A-Za-z\s]{2,100}$/;
+    if (!nameRegex.test(name.trim())) {
+      return "Nama harus huruf dan minimal 2 karakter.";
+    }
+
+    // No HP: hanya angka, 10-13 digit (boleh diawali 0 atau +62)
+    const telpRegex = /^(0|\+62)[0-9]{9,12}$/;
+    if (!telpRegex.test(telp.trim())) {
+      return "Nomor HP harus 10-13 digit, awali dengan 0 atau +62.";
+    }
+
+    // Email: format standar
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email.trim())) {
+      return "Format email tidak valid.";
+    }
+
+    // Password: minimal 8 karakter, ada huruf dan angka
+    if (password.length < 8) {
+      return "Password minimal 8 karakter.";
+    }
+    const hasLetter = /[A-Za-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasLetter || !hasNumber) {
+      return "Password harus kombinasi huruf dan angka.";
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !telp || !email || !password) {
-      setError("Semua field wajib diisi.");
+
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
-    if (password.length < 8) {
-      setError("Password minimal 8 karakter.");
-      return;
-    }
+
     setError("");
     setLoading(true);
 
@@ -38,7 +73,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, telp, email, password }),
+        body: JSON.stringify({ name: name.trim(), telp: telp.trim(), email: email.trim(), password }),
       });
 
       const data = await res.json();
@@ -99,7 +134,7 @@ export default function RegisterPage() {
             <TextField id="telp" type="tel" fullWidth
               value={telp}
               onChange={(e) => setTelp(e.target.value)}
-              placeholder="+62812345678"
+              placeholder="08123456789"
             />
           </Stack>
 
@@ -124,6 +159,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              helperText="Minimal 8 karakter, kombinasi huruf dan angka"
             />
           </Stack>
 

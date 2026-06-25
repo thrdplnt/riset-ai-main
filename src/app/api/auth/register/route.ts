@@ -5,6 +5,7 @@ import { ApiResponse } from "@/utils/types";
 export async function POST(req: NextRequest) {
   try {
     const { name, email, telp, password } = await req.json();
+
     if (!name || !email || !telp || !password) {
       return NextResponse.json({
         success: false,
@@ -12,21 +13,50 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Validasi nama: huruf dan spasi saja, minimal 2 karakter
+    const nameRegex = /^[A-Za-z\s]{2,100}$/;
+    if (!nameRegex.test(name.trim())) {
+      return NextResponse.json({
+        success: false,
+        message: "Nama harus huruf dan minimal 2 karakter",
+      } satisfies ApiResponse, { status: 400 });
+    }
+
+    // Validasi no HP: angka saja, 10-13 digit
+    const telpRegex = /^(0|\+62)[0-9]{9,12}$/;
+    if (!telpRegex.test(telp.trim())) {
+      return NextResponse.json({
+        success: false,
+        message: "Nomor HP tidak valid, harus 10-13 digit",
+      } satisfies ApiResponse, { status: 400 });
+    }
+
+    // Validasi email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email.trim())) {
       return NextResponse.json({
         success: false,
         message: "Format email tidak valid",
       } satisfies ApiResponse, { status: 400 });
     }
+
+    // Validasi password: minimal 8 karakter, kombinasi huruf & angka
     if (password.length < 8) {
       return NextResponse.json({
         success: false,
         message: "Password minimal 8 karakter",
       } satisfies ApiResponse, { status: 400 });
     }
+    const hasLetter = /[A-Za-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasLetter || !hasNumber) {
+      return NextResponse.json({
+        success: false,
+        message: "Password harus kombinasi huruf dan angka",
+      } satisfies ApiResponse, { status: 400 });
+    }
 
-    const existing = await Pengguna.findByEmail(email);
+    const existing = await Pengguna.findByEmail(email.trim());
     if (existing) {
       return NextResponse.json({
         success: false,
@@ -34,7 +64,13 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 409 });
     }
 
-    const user = await Pengguna.create({ name, email, telp, password });
+    const user = await Pengguna.create({
+      name: name.trim(),
+      email: email.trim(),
+      telp: telp.trim(),
+      password,
+    });
+
     return NextResponse.json({
       success: true,
       message: "Registrasi berhasil, silakan login",
