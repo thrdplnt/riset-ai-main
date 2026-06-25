@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import sql from '@/db/postgres';
+import sql from "@/db/postgres";
+import { guessOpenAIInputLimit, guessOpenAIMaxOutput, guessAnthropicInputLimit, guessAnthropicMaxOutput, guessGeminiInputLimit, guessGeminiMaxOutput } from '@/lib/modelTokenLimits';
 
 async function getBaseUrl(provider_id: string): Promise<string> {
   const rows = await sql`
@@ -7,14 +8,6 @@ async function getBaseUrl(provider_id: string): Promise<string> {
   `;
   if (rows.length === 0) throw new Error(`Provider ${provider_id} tidak ditemukan`);
   return rows[0].base_url;
-}
-
-function guessOpenAIContext(model_id: string): number {
-  if (model_id.includes('gpt-5'))   return 400000;
-  if (model_id.includes('gpt-4o'))  return 128000;
-  if (model_id.includes('gpt-4'))   return 8192;
-  if (model_id.includes('gpt-3.5')) return 16385;
-  return 128000;
 }
 
 async function fetchOpenAIModels() {
@@ -29,7 +22,8 @@ async function fetchOpenAIModels() {
     .map((m: any) => ({
       model_name: m.id,
       display_name: m.id,
-      max_context_length: guessOpenAIContext(m.id),
+      max_input_tokens: guessOpenAIInputLimit(m.id),
+      max_output_tokens: guessOpenAIMaxOutput(m.id),
     }));
 }
 
@@ -43,13 +37,9 @@ async function fetchGeminiModels() {
     .map((m: any) => ({
       model_name: m.name.replace('models/', ''),
       display_name: m.displayName,
-      max_context_length: m.inputTokenLimit,
+      max_input_tokens: m.inputTokenLimit ?? guessGeminiInputLimit(),
+      max_output_tokens: m.outputTokenLimit ?? guessGeminiMaxOutput(),
     }));
-}
-
-function guessAnthropicContext(model_id: string): number {
-  if (model_id.startsWith('claude')) return 200000;
-  return 200000;
 }
 
 async function fetchAnthropicModels() {
@@ -65,7 +55,8 @@ async function fetchAnthropicModels() {
   return data.data.map((m: any) => ({
     model_name: m.id,
     display_name: m.id,
-    max_context_length: guessAnthropicContext(m.id),
+    max_input_tokens: m.max_input_tokens ?? guessAnthropicInputLimit(m.id),
+    max_output_tokens: m.max_tokens ?? guessAnthropicMaxOutput(m.id),
   }));
 }
 

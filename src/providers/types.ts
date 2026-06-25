@@ -27,7 +27,7 @@ export interface ModelConfig {
   provider_id: string;
   model_name: string;
   base_url: string;
-  max_context_length: number;
+  max_input_tokens: number;
   max_output_tokens: number;
   supports_web_search?: boolean;
 }

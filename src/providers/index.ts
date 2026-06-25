@@ -9,7 +9,7 @@ import sql from "@/db/postgres";
 
 export async function getModelConfig(model_id: string): Promise<ModelConfig> {
   const rows = await sql`
-    SELECT m.model_name, m.provider_id, m.max_context_length, m.max_output_tokens, p.base_url
+    SELECT m.model_name, m.provider_id, m.max_input_tokens, m.max_output_tokens, p.base_url
     FROM models m
     JOIN providers p ON m.provider_id = p.id
     WHERE m.id = ${model_id} AND m.is_active = true
@@ -31,19 +31,24 @@ export async function callLLM(
   input_tokens: number
 ): Promise<LLMResponse> {
 
+  if (input_tokens !== undefined && input_tokens > config.max_input_tokens) {
+    throw new Error(
+      `Prompt dan riwayat percakapan terlalu panjang untuk model ini (±${input_tokens.toLocaleString()} token, batas maksimum ${config.max_input_tokens.toLocaleString()} token)`
+    );
+  }
+
   let effectiveMaxOutput: number;
 
   if (remaining_quota !== undefined && input_tokens !== undefined) {
     effectiveMaxOutput = Math.max(
       Math.min(
-        config.max_context_length - input_tokens,
-        remaining_quota - input_tokens,
-        config.max_output_tokens  
+        config.max_output_tokens,
+        remaining_quota - input_tokens
       ),
       0
     );
   } else {
-    effectiveMaxOutput = Math.min(config.max_context_length, config.max_output_tokens);
+    effectiveMaxOutput = config.max_output_tokens;
   }
 
 

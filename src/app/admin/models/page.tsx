@@ -19,6 +19,8 @@ interface Model {
   display_name: string;
   model_name: string;
   is_active: boolean;
+  max_input_tokens: number;   
+  max_output_tokens: number;
   isNew?: boolean;
   isDirty?: boolean;
 }
@@ -26,7 +28,8 @@ interface Model {
 interface AvailableModel {
   model_name: string;
   display_name: string;
-  max_context_length: number;
+  max_input_tokens: number;
+  max_output_tokens: number;
 }
 
 interface AvailableModels {
@@ -108,6 +111,8 @@ export default function ModelManagementPage() {
       model_name: model.model_name,
       is_active: true,
       isNew: true,
+      max_input_tokens: model.max_input_tokens,
+      max_output_tokens: model.max_output_tokens,
     }]);
     setPresetOpen(false);
   };
@@ -132,6 +137,8 @@ export default function ModelManagementPage() {
       display_name: "",
       model_name: "",
       is_active: true,
+      max_input_tokens: 0, 
+      max_output_tokens: 0,
       isNew: true,
     }]);
   };
@@ -184,6 +191,7 @@ export default function ModelManagementPage() {
     try {
       for (const model of models) {
         if (model.isNew && model.display_name && model.model_name) {
+          
           await fetch("/api/admin/models", {
             method: "POST",
             headers: getHeaders(),
@@ -191,6 +199,8 @@ export default function ModelManagementPage() {
               provider_id: model.provider_id,
               model_name: model.model_name,
               display_name: model.display_name,
+              max_input_tokens: model.max_input_tokens,
+              max_output_tokens: model.max_output_tokens,
             }),
           });
         } else if (!model.isNew && model.isDirty) {

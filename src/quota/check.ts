@@ -37,7 +37,7 @@ export async function checkQuota(
   // let warning: string | undefined;
   if (input_tokens > balance.remaining_quota) {
     throw new Error(
-      `Kuota token tidak mencukupi untuk prompt ini. Estimasi kebutuhan token ±${input_tokens.toLocaleString()}, sisa kuota Anda ${balance.remaining_quota.toLocaleString()}. Kurangi panjang pesan atau hubungi admin untuk menambah kuota.`
+      `Kuota token tidak mencukupi untuk prompt ini. Estimasi kebutuhan token ±${input_tokens.toLocaleString()}, sisa kuota Anda ${balance.remaining_quota.toLocaleString()}.`
     );
   }
 
