@@ -19,17 +19,61 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Unauthorized" } satisfies ApiResponse, { status: 401 });
     }
 
-    const users = await sql`
-      SELECT 
-        u.id, u.name, u.email, u.telp, u.role, u.is_active, u.created_at,
-        sp.plan_name as current_plan,
-        spe.end_date as subscription_end
-      FROM users u
-      LEFT JOIN subscription_periods spe 
-        ON spe.user_id = u.id AND spe.is_active = true AND spe.end_date >= CURRENT_DATE
-      LEFT JOIN subscription_plans sp ON sp.id = spe.plan_id
-      ORDER BY u.created_at DESC
-    `;
+    const { searchParams } = req.nextUrl;
+    const sortBy = searchParams.get("sortBy") ?? "created_at";
+    const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
+
+    const allowedSortColumns: Record<string, string> = {
+      name: "u.name",
+      email: "u.email",
+      created_at: "u.created_at",
+      last_usage_at: "last_log.interacted_at",
+    };
+    const sortColumn = allowedSortColumns[sortBy] ?? "u.created_at";
+
+    const users = sortOrder === "asc"
+      ? await sql`
+          SELECT 
+            u.id, u.name, u.email, u.telp, u.role, u.is_active, u.created_at,
+            sp.plan_name as current_plan,
+            spe.end_date as subscription_end,
+            last_log.interacted_at as last_usage_at,
+            last_log.model_display_name as last_usage_model
+          FROM users u
+          LEFT JOIN subscription_periods spe 
+            ON spe.user_id = u.id AND spe.is_active = true AND spe.end_date >= CURRENT_DATE
+          LEFT JOIN subscription_plans sp ON sp.id = spe.plan_id
+          LEFT JOIN LATERAL (
+            SELECT il.interacted_at, m.display_name as model_display_name
+            FROM interaction_logs il
+            JOIN models m ON m.id = il.model_id
+            WHERE il.user_id = u.id
+            ORDER BY il.interacted_at DESC
+            LIMIT 1
+          ) last_log ON true
+          ORDER BY ${sql(sortColumn)} ASC NULLS LAST
+        `
+      : await sql`
+          SELECT 
+            u.id, u.name, u.email, u.telp, u.role, u.is_active, u.created_at,
+            sp.plan_name as current_plan,
+            spe.end_date as subscription_end,
+            last_log.interacted_at as last_usage_at,
+            last_log.model_display_name as last_usage_model
+          FROM users u
+          LEFT JOIN subscription_periods spe 
+            ON spe.user_id = u.id AND spe.is_active = true AND spe.end_date >= CURRENT_DATE
+          LEFT JOIN subscription_plans sp ON sp.id = spe.plan_id
+          LEFT JOIN LATERAL (
+            SELECT il.interacted_at, m.display_name as model_display_name
+            FROM interaction_logs il
+            JOIN models m ON m.id = il.model_id
+            WHERE il.user_id = u.id
+            ORDER BY il.interacted_at DESC
+            LIMIT 1
+          ) last_log ON true
+          ORDER BY ${sql(sortColumn)} DESC NULLS LAST
+        `;
 
     return NextResponse.json({ success: true, message: "OK", data: users } satisfies ApiResponse<Record<string, unknown>[]>);
   } catch {

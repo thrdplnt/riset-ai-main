@@ -21,8 +21,14 @@ function ResetPasswordForm() {
     e.preventDefault();
     if (!password || !confirm) return setError("Semua field wajib diisi.");
     if (password.length < 8) return setError("Password minimal 8 karakter.");
+    
+    const hasLetter = /[A-Za-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasLetter || !hasNumber) return setError("Password harus kombinasi huruf dan angka.");
+    
     if (password !== confirm) return setError("Password tidak cocok.");
     if (!token) return setError("Token tidak ditemukan.");
+
 
     setError("");
     setLoading(true);
@@ -73,7 +79,7 @@ function ResetPasswordForm() {
             fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Minimal 8 karakter"
+            placeholder="Min. 8 karakter, kombinasi huruf & angka"
             disabled={success}
           />
         </Stack>

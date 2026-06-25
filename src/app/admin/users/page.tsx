@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import { TableSortLabel } from "@mui/material";
 
 function getToken() {
   if (typeof window === "undefined") return "";
@@ -34,6 +35,8 @@ interface User {
   created_at: string;
   current_plan: string | null;
   subscription_end: string | null;
+  last_usage_at: string | null;
+  last_usage_model: string | null;
 }
 
 interface Plan {
@@ -53,6 +56,19 @@ interface SubscriptionHistory {
   limit_snapshot: number;
 }
 
+function timeAgo(dateStr: string | null) {
+  if (!dateStr) return null;
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days} hari lalu`;
+  if (hours > 0) return `${hours} jam lalu`;
+  if (minutes > 0) return `${minutes} menit lalu`;
+  return "Baru saja";
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -64,6 +80,10 @@ export default function UsersPage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "email" | "created_at" | "last_usage_at">("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  
 
   const getHeaders = () => ({
     "Content-Type": "application/json",
@@ -71,7 +91,8 @@ export default function UsersPage() {
   });
 
   const fetchUsers = () => {
-    fetch("/api/admin/users", { headers: getHeaders() })
+  const params = new URLSearchParams({ sortBy, sortOrder });
+    fetch(`/api/admin/users?${params}`, { headers: getHeaders() })
       .then((r) => r.json())
       .then((data) => {
         if (data.success) setUsers(data.data);
@@ -88,9 +109,8 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-    fetchPlans();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sortBy, sortOrder]);
 
   const handleToggleActive = async (user: User) => {
     const res = await fetch("/api/admin/users", {
@@ -132,6 +152,15 @@ export default function UsersPage() {
   setErrorMsg("");
   setConfirmOpen(true);
   };
+
+  const handleSort = (column: "name" | "email" | "created_at" | "last_usage_at") => {
+  if (sortBy === column) {
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  } else {
+    setSortBy(column);
+    setSortOrder("asc");
+  }
+};
 
   const handleConfirmAssign = async () => {
     if (!selectedUser || !selectedPlanId) return;
@@ -176,13 +205,42 @@ export default function UsersPage() {
         <Table sx={{ tableLayout: "fixed" }}>
           <TableHead>
             <TableRow sx={{ bgcolor: "action.hover" }}>
-              <TableCell sx={{ fontWeight: 600, width: "15%" }}>Nama</TableCell>
-              <TableCell sx={{ fontWeight: 600, width: "18%" }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: 600, width: "15%" }}>
+                <TableSortLabel
+                  active={sortBy === "name"}
+                  direction={sortBy === "name" ? sortOrder : "asc"}
+                  onClick={() => handleSort("name")}>
+                  Nama
+                </TableSortLabel>
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600, width: "18%" }}>
+                <TableSortLabel
+                  active={sortBy === "email"}
+                  direction={sortBy === "email" ? sortOrder : "asc"}
+                  onClick={() => handleSort("email")}>
+                  Email
+                </TableSortLabel>
+              </TableCell>
               {/* <TableCell sx={{ fontWeight: 600, width: "12%" }}>Role</TableCell> */}
               {/* <TableCell sx={{ fontWeight: 600, width: "13%" }}>Plan</TableCell> */}
-              <TableCell sx={{ fontWeight: 600, width: "12%" }}>Terdaftar</TableCell>
+              <TableCell sx={{ fontWeight: 600, width: "12%" }}>
+                <TableSortLabel
+                  active={sortBy === "created_at"}
+                  direction={sortBy === "created_at" ? sortOrder : "asc"}
+                  onClick={() => handleSort("created_at")}>
+                  Terdaftar
+                </TableSortLabel>
+              </TableCell>
               <TableCell align="center" sx={{ fontWeight: 600, width: "15%" }}>Status</TableCell>
               <TableCell align="center" sx={{ fontWeight: 600, width: "15%" }}>Aksi</TableCell>
+              <TableCell sx={{ fontWeight: 600, width: "14%" }}>
+                <TableSortLabel
+                  active={sortBy === "last_usage_at"}
+                  direction={sortBy === "last_usage_at" ? sortOrder : "asc"}
+                  onClick={() => handleSort("last_usage_at")}>
+                  Last Usage
+                </TableSortLabel>
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -260,6 +318,22 @@ export default function UsersPage() {
                         <HistoryOutlinedIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ width: "14%" }}>
+                    {user.last_usage_at ? (
+                      <>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {timeAgo(user.last_usage_at)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {user.last_usage_model}
+                        </Typography>
+                      </>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Belum pernah
+                      </Typography>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
