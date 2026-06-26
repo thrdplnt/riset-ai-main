@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Pengguna } from "@/domain/User";
+import { signVerifyToken } from "@/utils/jwt";
+import { sendVerificationEmail } from "@/lib/mailer";
+import { isValidEmailDomain } from "@/utils/emailValidator";
 import { ApiResponse } from "@/utils/types";
 
 export async function POST(req: NextRequest) {
@@ -13,7 +16,6 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    // Validasi nama: huruf dan spasi saja, minimal 2 karakter
     const nameRegex = /^[A-Za-z\s]{2,100}$/;
     if (!nameRegex.test(name.trim())) {
       return NextResponse.json({
@@ -22,7 +24,6 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    // Validasi no HP: angka saja, 10-13 digit
     const telpRegex = /^(0|\+62)[0-9]{9,12}$/;
     if (!telpRegex.test(telp.trim())) {
       return NextResponse.json({
@@ -31,7 +32,6 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    // Validasi email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email.trim())) {
       return NextResponse.json({
@@ -40,7 +40,15 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    // Validasi password: minimal 8 karakter, kombinasi huruf & angka
+    // ── Validasi domain email (MX record + cek disposable/temp-mail) ──
+    const isValidDomain = await isValidEmailDomain(email.trim());
+    if (!isValidDomain) {
+      return NextResponse.json({
+        success: false,
+        message: "Email tidak valid",
+      } satisfies ApiResponse, { status: 400 });
+    }
+
     if (password.length < 8) {
       return NextResponse.json({
         success: false,
@@ -71,9 +79,16 @@ export async function POST(req: NextRequest) {
       password,
     });
 
+    const verifyToken = await signVerifyToken(user.id);
+    try {
+      await sendVerificationEmail(user.email, user.name, verifyToken);
+    } catch (emailError) {
+      console.error("Gagal kirim email verifikasi:", emailError);
+    }
+
     return NextResponse.json({
       success: true,
-      message: "Registrasi berhasil, silakan login",
+      message: "Registrasi berhasil. Silakan cek email kamu untuk verifikasi sebelum login.",
       data: { id: user.id, email: user.email },
     } satisfies ApiResponse<{ id: string; email: string }>,
       { status: 201 });

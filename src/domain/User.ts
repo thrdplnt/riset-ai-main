@@ -129,4 +129,8 @@ export class Pengguna {
   static async resetPassword(id: string, hashedPassword: string) {
     await sql`UPDATE users SET password = ${hashedPassword}, reset_token = NULL, reset_token_expires_at = NULL WHERE id = ${id}`;
   }
+  
+  static async verifyEmail(id: string): Promise<void> {
+  await sql`UPDATE users SET verified_at = NOW() WHERE id = ${id}`;
+}
 }
