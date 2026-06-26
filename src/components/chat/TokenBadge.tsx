@@ -98,7 +98,7 @@ export const TokenBadge = ({
           paper: {
             elevation: 0,
             sx: {
-              mt: 1, minWidth: 240,
+              mt: 1, minWidth: 280,
               borderRadius: "14px",
               border: "1px solid", borderColor: "custom.borderLight",
               boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
@@ -117,25 +117,31 @@ export const TokenBadge = ({
         <Divider />
 
         <Box sx={{ px: 2, py: 1.5 }}>
-          <Stack sx={{ gap: 0.5 }}>
-            <Typography sx={{ fontWeight: 600, fontSize: "13px", color: "text.primary" }}>
-              Tokens Quota
-            </Typography>
+          <Stack sx={{
+            flexDirection: "row", justifyContent: "space-between",
+            alignItems: "flex-start", gap: 1.5, flexWrap: "wrap",
+          }}>
+            <Box>
+              <Typography sx={{ fontWeight: 600, fontSize: "13px", color: "text.primary" }}>
+                Tokens Quota
+              </Typography>
+              {expiry && (
+                <Typography variant="caption" color="text.secondary">
+                  Expires {expiry}
+                </Typography>
+              )}
+            </Box>
             <Stack sx={{
               flexDirection: "row", alignItems: "center",
               gap: 0.5, color: "text.secondary",
+              flexShrink: 0,
             }}>
               <DatabaseIcon size={13} />
               <Typography variant="body2" color="text.secondary"
-                sx={{ fontWeight: 500, fontSize: "13px" }}>
+                sx={{ fontWeight: 500, fontSize: "13px", whiteSpace: "nowrap" }}>
                 {remaining !== null ? `${formatNumber(remaining)} Token left` : "—"}
               </Typography>
             </Stack>
-            {expiry && (
-              <Typography variant="caption" color="text.secondary">
-                Expires {expiry}
-              </Typography>
-            )}
           </Stack>
         </Box>
 
