@@ -37,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <Box sx={{ display: "flex", mt: "64px" }}>
         <Sidebar role="admin" onLogout={logout} />
-        <Box sx={{ ml: "280px", flex: 1, minHeight: "calc(100vh - 64px)", bgcolor: "background.default" }}>
+        <Box sx={{ ml: "260px", flex: 1, minHeight: "calc(100vh - 64px)", bgcolor: "background.default" }}>
           <Box sx={{ p: 4 }}>
             {children}
           </Box>

@@ -6,6 +6,7 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Typography,
   styled,
   useTheme,
 } from "@mui/material";
@@ -104,6 +105,21 @@ const MenuItemButton = styled(ListItemButton)(({ theme }) => ({
   },
 }));
 
+const SectionLabel = ({ children, first = false }: { children: React.ReactNode; first?: boolean }) => (
+  <Typography sx={{
+    px: 1.5,
+    pt: first ? 0.5 : 2,
+    pb: 0.75,
+    fontFamily: 'var(--font-manrope), sans-serif',
+    fontSize: "11px", fontWeight: 700,
+    color: "text.secondary",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+  }}>
+    {children}
+  </Typography>
+);
+
 interface SidebarMenuProps {
   role: "user" | "admin";
   onLogout: () => void;
@@ -119,7 +135,7 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
 
   return (
     <List disablePadding sx={{ px: 1 }}>
-      {/* Main Menu */}
+      <SectionLabel first>Account</SectionLabel>
       {mainItems.map((item) => (
         <MenuItemButton
           key={item.path}
@@ -142,6 +158,7 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
             slotProps={{
               primary: {
                 sx: {
+                  fontFamily: 'var(--font-inter), sans-serif',
                   fontSize: 14,
                   fontWeight: pathname === item.path ? 600 : 400,
                   color: pathname === item.path
@@ -154,10 +171,9 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
         </MenuItemButton>
       ))}
 
-      {/* Admin Management Items */}
       {role === "admin" && (
         <>
-          <Divider sx={{ my: 1 }} />
+          <SectionLabel>Administration</SectionLabel>
           {adminManagementItems.map((item) => (
             <MenuItemButton
               key={item.path}
@@ -180,6 +196,7 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
                 slotProps={{
                   primary: {
                     sx: {
+                      fontFamily: 'var(--font-inter), sans-serif',
                       fontSize: 14,
                       fontWeight: pathname === item.path ? 600 : 400,
                       color: pathname === item.path
@@ -194,8 +211,7 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
         </>
       )}
 
-      {/* Logout */}
-      <Divider sx={{ my: 1 }} />
+      <Divider sx={{ my: 1.5 }} />
       <MenuItemButton onClick={onLogout}>
         <ListItemIcon sx={{ minWidth: 36, color: "error.main" }}>
           <LogoutOutlinedIcon fontSize="small" />
@@ -205,6 +221,7 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
           slotProps={{
             primary: {
               sx: {
+                fontFamily: 'var(--font-inter), sans-serif',
                 fontSize: 14,
                 fontWeight: 400,
                 color: "error.main",
