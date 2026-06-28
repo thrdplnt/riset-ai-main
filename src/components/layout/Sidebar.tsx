@@ -4,8 +4,8 @@ import { Box, styled } from "@mui/material";
 import SidebarMenu from "./SidebarMenu";
 
 const SidebarWrapper = styled(Box)(({ theme }) => (`
-  width: 280px;
-  min-width: 280px;
+  width: 260px;
+  min-width: 260px;
   height: 100vh;
   position: fixed;
   left: 0;
@@ -27,7 +27,7 @@ export default function Sidebar({ role, onLogout }: SidebarProps) {
   return (
     <SidebarWrapper>
       <Box sx={{ flex: 1, overflowY: "auto", py: 1 }}>
-        <SidebarMenu role={role} onLogout={onLogout} /> {/* role diteruskan */}
+        <SidebarMenu role={role} onLogout={onLogout} />
       </Box>
     </SidebarWrapper>
   );

@@ -73,7 +73,9 @@ export async function callAnthropic(
       max_tokens: req.quota_limit,
       system: req.system,
       messages,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }], // ← FIX: aktifkan web search
+      ...(req.web_search ? {
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      } :  {})
     }),
   });
 

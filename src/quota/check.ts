@@ -6,7 +6,7 @@ export interface QuotaCheckResult {
   balance_id: string;
   remaining_quota: number;
   input_tokens: number;
-  warning?: string;
+  // warning?: string;
 }
 
 export async function checkQuota(
@@ -24,7 +24,7 @@ export async function checkQuota(
     throw new Error('Kuota token habis');
   }
 
-  const estimated = await estimateTotalTokens(
+  const input_tokens = await estimateTotalTokens(
     config.provider_id,
     config.base_url,
     config.model_name,
@@ -34,15 +34,17 @@ export async function checkQuota(
     balance.remaining_quota
   );
 
-  let warning: string | undefined;
-  if (balance.remaining_quota < estimated) {
-    warning = `Sisa kuota mungkin tidak mencukupi (estimasi ±${estimated} token, sisa ${balance.remaining_quota} token). Respons mungkin terpotong.`;
+  // let warning: string | undefined;
+  if (input_tokens > balance.remaining_quota) {
+    throw new Error(
+      `Kuota token tidak mencukupi untuk prompt ini. Estimasi kebutuhan token ±${input_tokens.toLocaleString()}, sisa kuota Anda ${balance.remaining_quota.toLocaleString()}.`
+    );
   }
 
   return {
     balance_id: balance.balance_id,
     remaining_quota: balance.remaining_quota,
-    input_tokens: estimated,
-    warning,
+    input_tokens,
+    // warning,
   };
 }

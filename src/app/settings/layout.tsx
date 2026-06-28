@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, IconButton, Typography } from "@mui/material";
+import { Box, IconButton, Stack, Typography } from "@mui/material";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import Sidebar from "@/components/layout/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,20 +25,27 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
         zIndex: 8,
         display: "flex",
         alignItems: "center",
+        justifyContent: "space-between",
         px: 3,
-        gap: 1,
       }}>
-        <IconButton size="small" onClick={() => router.push("/chat")}>
-          <ArrowBackOutlinedIcon fontSize="small" />
-        </IconButton>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Settings
-        </Typography>
+        <Stack sx={{ flexDirection: "row", alignItems: "center", gap: 1 }}>
+          <IconButton size="small" onClick={() => router.push("/chat")} sx={{ border: "none" }}>
+            <ArrowBackOutlinedIcon fontSize="small" />
+          </IconButton>
+          <Typography sx={{
+            fontFamily: 'var(--font-poppins), sans-serif',
+            fontWeight: 600,
+            fontSize: "16px",
+            color: "text.primary",
+          }}>
+            Settings
+          </Typography>
+        </Stack>
       </Box>
 
       <Box sx={{ display: "flex", mt: "64px" }}>
         <Sidebar role={role} onLogout={logout} />
-        <Box sx={{ ml: "280px", flex: 1, minHeight: "calc(100vh - 64px)", bgcolor: "background.default" }}>
+        <Box sx={{ ml: "260px", flex: 1, minHeight: "calc(100vh - 64px)", bgcolor: "background.default" }}>
           <Box sx={{ p: 4 }}>
             {children}
           </Box>

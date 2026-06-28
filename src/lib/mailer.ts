@@ -52,3 +52,29 @@ export async function sendSubscriptionActivatedEmail(to: string, planName: strin
     `,
   });
 }
+
+export async function sendVerificationEmail(to: string, name: string, token: string) {
+  const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
+
+  await transporter.sendMail({
+    from: `"Riset AI" <${process.env.SMTP_USER}>`,
+    to,
+    subject: "Verifikasi Email Kamu - Riset AI",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2 style="color: #1a1a1a;">Halo, ${name}!</h2>
+        <p style="color: #555; font-size: 14px; line-height: 1.6;">
+          Terima kasih telah mendaftar di Riset AI. Klik tombol di bawah untuk memverifikasi email kamu:
+        </p>
+        <a href="${verifyUrl}"
+          style="display: inline-block; background: #1a1a1a; color: #fff; text-decoration: none;
+          padding: 12px 24px; border-radius: 8px; font-size: 14px; margin: 16px 0;">
+          Verifikasi Email
+        </a>
+        <p style="color: #888; font-size: 12px;">
+          Link ini berlaku selama 24 jam. Jika kamu tidak mendaftar di Riset AI, abaikan email ini.
+        </p>
+      </div>
+    `,
+  });
+}

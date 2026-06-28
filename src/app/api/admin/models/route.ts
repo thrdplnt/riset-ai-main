@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import sql from "@/db/postgres";
 import { randomUUID } from 'crypto';
+import { guessTokenLimits } from '@/lib/modelTokenLimits';
 
 export async function GET() {
   try {
     const models = await sql`
       SELECT m.id, m.display_name, m.model_name, m.is_active,
+             m.max_input_tokens, m.max_output_tokens,
              p.id as provider_id, p.provider_name
       FROM models m
       JOIN providers p ON m.provider_id = p.id
@@ -22,7 +24,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { provider_id, model_name, display_name, max_context_length } = await req.json();
+    const { provider_id, model_name, display_name, max_input_tokens, max_output_tokens } = await req.json();
 
     const existing = await sql`
       SELECT id FROM models
@@ -36,9 +38,17 @@ export async function POST(req: Request) {
       );
     }
 
+    const finalInput = max_input_tokens && max_input_tokens > 0
+      ? max_input_tokens
+      : guessTokenLimits(provider_id, model_name).max_input_tokens;
+
+    const finalOutput = max_output_tokens && max_output_tokens > 0
+      ? max_output_tokens
+      : guessTokenLimits(provider_id, model_name).max_output_tokens;
+
     await sql`
-      INSERT INTO models (id, provider_id, display_name, model_name, is_active, max_context_length)
-      VALUES (${randomUUID()}, ${provider_id}, ${display_name}, ${model_name}, true, ${max_context_length ?? 4096})
+      INSERT INTO models (id, provider_id, display_name, model_name, is_active, max_input_tokens, max_output_tokens)
+      VALUES (${randomUUID()}, ${provider_id}, ${display_name}, ${model_name}, true, ${finalInput}, ${finalOutput})
     `;
 
     return NextResponse.json({ success: true });

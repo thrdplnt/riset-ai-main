@@ -30,6 +30,13 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 403 });
     }
 
+    if (!user.verified_at) {
+      return NextResponse.json({
+        success: false,
+        message: "Email belum diverifikasi.",
+      } satisfies ApiResponse, { status: 403 });
+    }
+
     const valid = await user.autentikasi(password);
     if (!valid) {
       return NextResponse.json({

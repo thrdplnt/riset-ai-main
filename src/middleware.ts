@@ -7,6 +7,7 @@ const publicRoutes = [
   ROUTES.REGISTER,
   ROUTES.FORGOT_PASSWORD,
   ROUTES.RESET_PASSWORD,
+  ROUTES.VERIFY_EMAIL,
 ];
 
 const adminRoutes: string[] = [

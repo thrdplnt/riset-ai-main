@@ -26,6 +26,12 @@ export class DompetToken {
     userId: string,
     modelId: string
   ): Promise<DompetToken | null> {
+    const modelExists = await sql`
+      SELECT id FROM models WHERE id = ${modelId} AND is_active = true
+    `;
+    if (modelExists.length === 0) {
+      throw new Error("Model tidak ditemukan atau sudah tidak aktif");
+    }
     // Cek period aktif
     const period = await sql`
       SELECT id, limit_snapshot

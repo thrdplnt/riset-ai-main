@@ -32,8 +32,9 @@ export class LogInteraksi {
   output_tokens: number;
   interacted_at: Date;
   attachments: Attachment[];
+  model_display_name?: string;
 
-  constructor(data: InteractionLog & { attachments?: unknown }) {
+  constructor(data: InteractionLog & { attachments?: unknown; model_display_name?: string  }) {
     this.id = data.id;
     this.room_id = data.room_id;
     this.model_id = data.model_id;
@@ -44,6 +45,7 @@ export class LogInteraksi {
     this.output_tokens = data.output_tokens;
     this.interacted_at = data.interacted_at;
     this.attachments = parseAttachments(data.attachments);
+    this.model_display_name = data.model_display_name;
   }
 
   static async simpan(data: {
@@ -55,18 +57,19 @@ export class LogInteraksi {
     input_tokens: number;
     output_tokens: number;
     attachments?: Attachment[];
+    used_web_search?: boolean;
   }): Promise<LogInteraksi> {
     const id = crypto.randomUUID();
     const rows = await sql`
       INSERT INTO interaction_logs (
         id, room_id, model_id, user_id,
         prompt_text, response_text,
-        input_tokens, output_tokens, interacted_at, attachments
+        input_tokens, output_tokens, interacted_at, attachments, used_web_search
       ) VALUES (
         ${id}, ${data.room_id}, ${data.model_id}, ${data.user_id},
         ${data.prompt_text}, ${data.response_text},
         ${data.input_tokens}, ${data.output_tokens}, NOW(),
-        ${JSON.stringify(data.attachments ?? [])}
+        ${JSON.stringify(data.attachments ?? [])}, ${data.used_web_search ?? false}
       )
       RETURNING *
     `;
@@ -87,14 +90,15 @@ export class LogInteraksi {
     return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown }));
   }
 
-  // FIX BARU — untuk ditampilkan di UI, ambil SEMUA history tanpa limit
   static async getAllByRoomId(roomId: string): Promise<LogInteraksi[]> {
     const rows = await sql`
-      SELECT * FROM interaction_logs
-      WHERE room_id = ${roomId}
-      ORDER BY interacted_at ASC
+      SELECT il.*, m.display_name as model_display_name
+      FROM interaction_logs il
+      JOIN models m ON m.id = il.model_id
+      WHERE il.room_id = ${roomId}
+      ORDER BY il.interacted_at ASC
     `;
-    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown }));
+    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown; model_display_name: string }));
   }
 
   static async getByUserId(userId: string): Promise<LogInteraksi[]> {

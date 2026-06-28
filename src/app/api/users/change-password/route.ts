@@ -19,6 +19,12 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: false, message: "Password baru minimal 8 karakter" }, { status: 400 });
   }
 
+  const hasLetter = /[A-Za-z]/.test(newPassword);
+  const hasNumber = /[0-9]/.test(newPassword);
+  if (!hasLetter || !hasNumber) {
+    return NextResponse.json({ success: false, message: "Password baru harus kombinasi huruf dan angka" }, { status: 400 });
+  }
+
   const user = await Pengguna.findById(payload.userId);
   if (!user) return NextResponse.json({ success: false, message: "User tidak ditemukan" }, { status: 404 });
 

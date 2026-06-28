@@ -57,6 +57,10 @@ export default function ChatPage() {
   const [isFree, setIsFree] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [limitError, setLimitError] = useState<string | null>(null);
+  const [supportsWebSearch, setSupportsWebSearch] = useState(false);
+  const [allModels, setAllModels] = useState<any[]>([]);
+  const [planName, setPlanName] = useState<string | undefined>(undefined);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   const userInitials = user?.name
     ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -66,7 +70,16 @@ export default function ChatPage() {
     fetch("/api/chat")
       .then((r) => r.json())
       .then((data) => { if (data.success) setChats(data.data); });
+
+    fetch("/api/models")
+    .then((r) => r.json())
+    .then((data) => { if (data.success) setAllModels(data.data); });
   }, []);
+
+  useEffect(() => {
+    const current = allModels.find((m) => m.id === modelId);
+    setSupportsWebSearch(current?.supports_web_search ?? false);
+  }, [modelId, allModels]);
 
   useEffect(() => {
     fetch("/api/quota/check")
@@ -83,6 +96,8 @@ export default function ChatPage() {
         if (data.success && data.data) {
           setRemaining(data.data.remaining_quota);
           setTotal(data.data.total_quota);
+          setPlanName(data.data.plan_name ?? undefined);
+          setExpiresAt(data.data.expires_at ?? null);
         }
       });
   }, [modelId]);
@@ -95,6 +110,10 @@ export default function ChatPage() {
     setActiveChatId(null);
     setMessages([]);
     setLimitError(null);
+    setModelId("");
+    setModelName("");
+    setRemaining(null);
+    setTotal(null);
   };
 
   const handleSelectChat = async (id: string) => {
@@ -117,6 +136,19 @@ export default function ChatPage() {
         },
       ]);
       setMessages(history);
+
+      const lastLog = data.data.history[data.data.history.length - 1];
+      if (lastLog?.model_id && lastLog?.model_display_name) {
+        setModelId(lastLog.model_id);
+        setModelName(lastLog.model_display_name);
+      } else {
+        const savedId = localStorage.getItem("lastModelId");
+        const savedName = localStorage.getItem("lastModelName");
+        if (savedId && savedName) {
+          setModelId(savedId);
+          setModelName(savedName);
+        }
+      }
     }
   };
 
@@ -139,7 +171,7 @@ export default function ChatPage() {
     localStorage.setItem("lastModelName", name);
   };
 
-  const handleSend = async (prompt: string, attachments: PendingAttachment[]) => {
+  const handleSend = async (prompt: string, attachments: PendingAttachment[], webSearch: boolean) => {
     if (isFree) {
       setLimitError("Plan Free tidak dapat mengakses AI. Hubungi admin untuk upgrade.");
       return;
@@ -181,6 +213,7 @@ export default function ChatPage() {
           model_id: modelId,
           attachments,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          web_search: webSearch,
         }),
       });
       const data = await res.json();
@@ -227,6 +260,14 @@ export default function ChatPage() {
     }
   };
 
+  const [blockAttachOnWebSearch, setBlockAttachOnWebSearch] = useState(false);
+
+    useEffect(() => {
+      const current = allModels.find((m) => m.id === modelId);
+      setSupportsWebSearch(current?.supports_web_search ?? false);
+      setBlockAttachOnWebSearch(current?.provider_id === "openai"); 
+    }, [modelId, allModels]);
+
   const showEmptyState = !activeChatId || messages.length === 0;
 
   return (
@@ -262,7 +303,13 @@ export default function ChatPage() {
             justifyContent: "flex-end",
             gap: 1.5,
           }}>
-            <TokenBadge remaining={remaining} total={total} modelName={modelName} />
+            <TokenBadge
+              remaining={remaining}
+              total={total}
+              modelName={modelName}
+              planName={planName}
+              expiresAt={expiresAt}
+            />
             <UserMenu user={user} onLogout={logout} />
           </Toolbar>
         </AppBar>
@@ -298,6 +345,9 @@ export default function ChatPage() {
                   onModelChange={handleModelChange}
                   loading={loading}
                   menuDirection="down"
+                  supportsWebSearch={supportsWebSearch}
+                  blockAttachOnWebSearch={blockAttachOnWebSearch}
+                  disabled={isFree}
                 />
               </Box>
             </Box>
@@ -379,6 +429,8 @@ export default function ChatPage() {
                   onModelChange={handleModelChange}
                   loading={loading}
                   menuDirection="up"
+                  supportsWebSearch={supportsWebSearch}
+                  disabled={isFree}
                 />
               </Box>
             </>

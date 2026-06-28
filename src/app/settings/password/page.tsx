@@ -34,6 +34,13 @@ export default function PasswordPage() {
     if (newPassword.length < 8) {
       return setError("Password baru minimal 8 karakter.");
     }
+
+    const hasLetter = /[A-Za-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    if (!hasLetter || !hasNumber) {
+      return setError("Password baru harus kombinasi huruf dan angka.");
+    }
+
     if (newPassword !== confirmPassword) {
       return setError("Konfirmasi password tidak cocok.");
     }
@@ -132,7 +139,7 @@ export default function PasswordPage() {
               fullWidth
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Minimal 8 karakter"
+              placeholder="Min. 8 karakter, kombinasi huruf & angka"
               slotProps={{
                 input: {
                   endAdornment: <EyeToggle show={showNew} onToggle={() => setShowNew(!showNew)} />,

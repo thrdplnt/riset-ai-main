@@ -13,27 +13,9 @@ import { useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/routes";
-
-const footerLinks = [
-  {
-    text: "Don't have an account? ",
-    linkText: "Register here",
-    suffix: ".",
-    href: ROUTES.REGISTER,
-  },
-  {
-    text: "Didn't receive your verification email? ",
-    linkText: "Resend here",
-    suffix: ".",
-    href: "#",
-  },
-  {
-    text: "Forgot your password? ",
-    linkText: "Reset here",
-    suffix: ".",
-    href: ROUTES.FORGOT_PASSWORD,
-  },
-];
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import { InputAdornment, IconButton } from "@mui/material";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -41,6 +23,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +34,7 @@ export default function LoginPage() {
       return;
     }
     setError("");
+    setResendMessage("");
     setLoading(true);
     const { error: loginError } = await login(email, password);
     if (loginError) {
@@ -56,6 +42,56 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError("Masukkan email kamu terlebih dahulu di atas, lalu klik kirim ulang.");
+      return;
+    }
+    setResending(true);
+    setError("");
+    setResendMessage("");
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setResendMessage(data.message);
+    } catch {
+      setError("Gagal mengirim ulang email verifikasi");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const footerLinks = [
+    {
+      text: "Don't have an account? ",
+      linkText: "Register here",
+      suffix: ".",
+      href: ROUTES.REGISTER,
+      onClick: undefined,
+    },
+    {
+      text: "Didn't receive your verification email? ",
+      linkText: resending ? "Sending..." : "Resend here",
+      suffix: ".",
+      href: "#",
+      onClick: (e: React.MouseEvent) => {
+        e.preventDefault();
+        handleResendVerification();
+      },
+    },
+    {
+      text: "Forgot your password? ",
+      linkText: "Reset here",
+      suffix: ".",
+      href: ROUTES.FORGOT_PASSWORD,
+      onClick: undefined,
+    },
+  ];
 
   return (
     <AuthLayout
@@ -67,7 +103,13 @@ export default function LoginPage() {
             <Typography key={index} variant="body2" color="slate.500"
               sx={{ textAlign: "center" }}>
               {item.text}
-              <Link href={item.href} underline="always" color="inherit">
+              <Link
+                href={item.href}
+                underline="always"
+                color="inherit"
+                onClick={item.onClick}
+                sx={item.onClick ? { cursor: "pointer" } : undefined}
+              >
                 {item.linkText}
               </Link>
               {item.suffix}
@@ -81,6 +123,12 @@ export default function LoginPage() {
           {error && (
             <Alert severity="error" sx={{ borderRadius: 1, py: 0.5 }}>
               {error}
+            </Alert>
+          )}
+
+          {resendMessage && (
+            <Alert severity="success" sx={{ borderRadius: 1, py: 0.5 }}>
+              {resendMessage}
             </Alert>
           )}
 
@@ -101,10 +149,26 @@ export default function LoginPage() {
               variant="subtitle2" color="text.primary">
               Password
             </Typography>
-            <TextField id="password" type="password" fullWidth
+            <TextField id="password" type={showPassword ? "text" : "password"} fullWidth
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword((v) => !v)}
+                        edge="end"
+                        size="small"
+                        sx={{ border: "none" }}
+                      >
+                        {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" /> : <VisibilityOutlinedIcon fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
           </Stack>
 

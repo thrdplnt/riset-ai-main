@@ -32,13 +32,14 @@ export async function POST(
       } satisfies ApiResponse, { status: 401 });
     }
 
-    const { prompt, model_id, attachments, timezone } = await req.json() as {
+    const { prompt, model_id, attachments, timezone, web_search} = await req.json() as {
       prompt: string;
       model_id: string;
       attachments?: Attachment[];
       timezone?: string;
+      web_search?: boolean;
     };
-
+    
     if (!prompt || !model_id) {
       return NextResponse.json({
         success: false,
@@ -46,7 +47,6 @@ export async function POST(
       } satisfies ApiResponse, { status: 400 });
     }
 
-    // Build system prompt dinamis — tanggal sesuai timezone user
     const tz = timezone || "Asia/Jakarta";
     const today = new Date().toLocaleDateString("en-US", {
       weekday: "long",
@@ -107,9 +107,23 @@ export async function POST(
       } satisfies ApiResponse, { status: 403 });
     }
 
+    if (web_search && !modelConfig.supports_web_search) {
+      return NextResponse.json({
+        success: false,
+        message: "Model yang dipilih tidak mendukung pencarian web",
+      } satisfies ApiResponse, { status: 400 });
+    }
+
+    if (web_search && attachments && attachments.length > 0 && modelConfig.provider_id === 'openai') {
+      return NextResponse.json({
+        success: false,
+        message: "Pencarian web pada OpenAI tidak dapat digunakan bersamaan dengan lampiran file",
+      } satisfies ApiResponse, { status: 400 });
+    }
+
     const llmResponse = await callLLM(
       modelConfig,
-      { prompt: effectivePrompt, history, attachments: llmAttachments, system: SYSTEM_PROMPT },
+      { prompt: effectivePrompt, history, attachments: llmAttachments, system: SYSTEM_PROMPT, web_search },
       quotaResult.remaining_quota,
       quotaResult.input_tokens
     );
@@ -123,6 +137,7 @@ export async function POST(
       input_tokens: llmResponse.input_tokens,
       output_tokens: llmResponse.output_tokens,
       attachments: attachments ?? [],
+      used_web_search: web_search ?? false,
     });
 
     await deductTokens(
@@ -142,15 +157,18 @@ export async function POST(
         response: llmResponse.text,
         input_tokens: llmResponse.input_tokens,
         output_tokens: llmResponse.output_tokens,
-        remaining_quota: quotaResult.remaining_quota - llmResponse.input_tokens - llmResponse.output_tokens,
-        warning: quotaResult.warning,
+        remaining_quota: Math.max(
+        quotaResult.remaining_quota - llmResponse.input_tokens - llmResponse.output_tokens,
+        0
+        ),
+        // warning: quotaResult.warning,
       },
     } satisfies ApiResponse<{
       response: string;
       input_tokens: number;
       output_tokens: number;
       remaining_quota: number;
-      warning: string | undefined;
+      // warning: string | undefined;
     }>);
 
   } catch (error) {

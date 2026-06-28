@@ -8,7 +8,7 @@ import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
-import { Avatar, Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -194,7 +194,6 @@ const InlineCode = ({ children }: { children?: React.ReactNode }) => (
   </code>
 );
 
-// ── Attachment preview ─────────────────────────────────────
 const AttachmentPreview = ({ attachments, isUser }: { attachments?: MessageAttachment[]; isUser: boolean }) => {
   const safeAttachments = Array.isArray(attachments) ? attachments : [];
   if (safeAttachments.length === 0) return null;
@@ -248,7 +247,7 @@ const AttachmentPreview = ({ attachments, isUser }: { attachments?: MessageAttac
   );
 };
 
-export const MessageBubble = ({ message, userInitials = "U" }: MessageBubbleProps) => {
+export const MessageBubble = ({ message }: MessageBubbleProps) => {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -263,124 +262,127 @@ export const MessageBubble = ({ message, userInitials = "U" }: MessageBubbleProp
 
   return (
     <Stack
-      sx={{ flexDirection: isUser ? "row-reverse" : "row",
-        alignItems: "flex-start", gap: 1.5, maxWidth: "100%" }}
+      sx={{
+        alignItems: isUser ? "flex-end" : "flex-start",
+        gap: 0.5,
+        maxWidth: isUser ? { xs: "85%", sm: "72%" } : "100%",
+        width: isUser ? "auto" : "100%",
+        minWidth: 0,
+        ...(isUser ? { ml: "auto" } : {}),
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {isUser ? (
-        <Avatar sx={{
-          width: 28, height: 28,
-          bgcolor: "custom.buttonDark",
-          fontSize: "11px", fontWeight: 700, flexShrink: 0,
-        }}>
-          {userInitials}
-        </Avatar>
-      ) : (
-        <Box component="img" src="/favicon.ico" alt="Riset AI"
-          sx={{ width: 28, height: 28, borderRadius: "8px",
-            objectFit: "cover", flexShrink: 0 }} />
-      )}
+      <AttachmentPreview attachments={message.attachments} isUser={isUser} />
 
-      <Stack sx={{
-        alignItems: isUser ? "flex-end" : "flex-start",
-        gap: 0.5, maxWidth: { xs: "85%", sm: "72%" },
-      }}>
+      {isUser ? (
         <Box sx={{
           px: 2, py: 1.25,
-          borderRadius: isUser ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
-          bgcolor: isUser ? "custom.buttonDark" : "rgba(0,0,0,0.04)",
-          color: isUser ? "custom.buttonText" : "text.primary",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-          border: isUser ? "none" : "1px solid",
-          borderColor: isUser ? "transparent" : "custom.borderLight",
+          borderRadius: "16px 16px 16px 16px",
+          bgcolor: "rgba(233, 233, 233, 0.8)", 
+          color: "text.primary",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           maxWidth: "100%",
           overflow: "hidden",
         }}>
-          <AttachmentPreview attachments={message.attachments} isUser={isUser} />
-
-          {isUser ? (
-            message.content && (
-              <Typography variant="body1" sx={{
-                whiteSpace: "pre-wrap", lineHeight: 1.7, color: "inherit",
-              }}>
-                {message.content}
-              </Typography>
-            )
-          ) : (
-            <Box sx={{
-              fontSize: "14px", lineHeight: 1.7, color: "text.primary",
-              "& p": { mt: 0, mb: 1, "&:last-child": { mb: 0 } },
-              "& h1, & h2, & h3": { fontWeight: 600, mt: 1.5, mb: 0.75 },
-              "& h1": { fontSize: "18px" },
-              "& h2": { fontSize: "16px" },
-              "& h3": { fontSize: "14px" },
-              "& ul, & ol": { pl: 2.5, mb: 1 },
-              "& li": { mb: 0.25 },
-              "& strong": { fontWeight: 600 },
-              "& em": { fontStyle: "italic" },
-              "& hr": { my: 1.5, border: "none",
-                borderTop: "1px solid", borderColor: "divider" },
-              "& a": { color: "primary.main", textDecoration: "underline" },
-              "& table": {
-                width: "100%", borderCollapse: "collapse", mb: 1.5,
-                display: "block", overflowX: "auto", whiteSpace: "nowrap",
-              },
-              "& th, & td": {
-                border: "1px solid", borderColor: "divider",
-                px: 1.5, py: 0.75, textAlign: "left", fontSize: "13px",
-              },
-              "& th": { bgcolor: "rgba(0,0,0,0.04)", fontWeight: 600 },
-              "& tr:nth-of-type(even)": { bgcolor: "rgba(0,0,0,0.02)" },
-              "& .katex": { fontSize: "1.05em" },
-              "& .katex-display": {
-                overflowX: "auto",
-                overflowY: "hidden",
-                py: 0.5,
-                my: 1,
-              },
+          {message.content && (
+            <Typography variant="body1" sx={{
+              whiteSpace: "pre-wrap", lineHeight: 1.7, color: "inherit",
+              fontFamily: 'var(--font-inter), Helvetica, sans-serif',
             }}>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex]}
-                components={{
-                  pre: Pre,
-                  code: InlineCode,
-                  blockquote: ({ children }) => <Blockquote>{children}</Blockquote>,
-                }}
-              >
-                {message.content}
-              </ReactMarkdown>
-            </Box>
+              {message.content}
+            </Typography>
           )}
-
           {message.tokens && (
             <Typography sx={{
               fontSize: "10.5px",
-              color: isUser ? "rgba(255,255,255,0.4)" : "text.secondary",
+              color: "text.secondary",
               mt: 0.75,
             }}>
               {message.tokens.total.toLocaleString()} tokens
             </Typography>
           )}
         </Box>
-
-        <Stack sx={{
-          flexDirection: "row", gap: 0.25,
-          opacity: hovered ? 1 : 0,
-          transition: "opacity 0.15s", px: 0.5,
+      ) : (
+        <Box sx={{
+          px: 0, py: 0.5,
+          width: "100%",
+          maxWidth: "100%",
+          overflow: "hidden",
         }}>
-          <Tooltip title={copied ? "Copied!" : "Copy"} placement="bottom">
-            <IconButton size="small" onClick={handleCopy}
-              sx={{ width: 26, height: 26, border: "none",
-                color: "text.secondary",
-                "&:hover": { bgcolor: "action.hover" } }}>
-              {copied
-                ? <CheckOutlinedIcon sx={{ fontSize: 13, color: "success.main" }} />
-                : <ContentCopyOutlinedIcon sx={{ fontSize: 13 }} />}
-            </IconButton>
-          </Tooltip>
-        </Stack>
+          <Box sx={{
+            fontSize: "14px", lineHeight: 1.7, color: "text.primary",
+            fontFamily: 'var(--font-inter), Helvetica, sans-serif',
+            "& p": { mt: 0, mb: 1, "&:last-child": { mb: 0 } },
+            "& h1, & h2, & h3": { fontWeight: 600, mt: 1.5, mb: 0.75 },
+            "& h1": { fontSize: "18px" },
+            "& h2": { fontSize: "16px" },
+            "& h3": { fontSize: "14px" },
+            "& ul, & ol": { pl: 2.5, mb: 1 },
+            "& li": { mb: 0.25 },
+            "& strong": { fontWeight: 600 },
+            "& em": { fontStyle: "italic" },
+            "& hr": { my: 1.5, border: "none",
+              borderTop: "1px solid", borderColor: "divider" },
+            "& a": { color: "primary.main", textDecoration: "underline" },
+            "& table": {
+              width: "100%", borderCollapse: "collapse", mb: 1.5,
+              display: "block", overflowX: "auto", whiteSpace: "nowrap",
+            },
+            "& th, & td": {
+              border: "1px solid", borderColor: "divider",
+              px: 1.5, py: 0.75, textAlign: "left", fontSize: "13px",
+            },
+            "& th": { bgcolor: "rgba(0,0,0,0.04)", fontWeight: 600 },
+            "& tr:nth-of-type(even)": { bgcolor: "rgba(0,0,0,0.02)" },
+            "& .katex": { fontSize: "1.05em" },
+            "& .katex-display": {
+              overflowX: "auto",
+              overflowY: "hidden",
+              py: 0.5,
+              my: 1,
+            },
+          }}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+              components={{
+                pre: Pre,
+                code: InlineCode,
+                blockquote: ({ children }) => <Blockquote>{children}</Blockquote>,
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </Box>
+
+          {message.tokens && (
+            <Typography sx={{
+              fontSize: "10.5px",
+              color: "text.secondary",
+              mt: 0.75,
+            }}>
+              {message.tokens.total.toLocaleString()} tokens
+            </Typography>
+          )}
+        </Box>
+      )}
+
+      <Stack sx={{
+        flexDirection: "row", gap: 0.25,
+        opacity: hovered ? 1 : 0,
+        transition: "opacity 0.15s", px: isUser ? 0.5 : 0,
+      }}>
+        <Tooltip title={copied ? "Copied!" : "Copy"} placement="bottom">
+          <IconButton size="small" onClick={handleCopy}
+            sx={{ width: 26, height: 26, border: "none",
+              color: "text.secondary",
+              "&:hover": { bgcolor: "action.hover" } }}>
+            {copied
+              ? <CheckOutlinedIcon sx={{ fontSize: 13, color: "success.main" }} />
+              : <ContentCopyOutlinedIcon sx={{ fontSize: 13 }} />}
+          </IconButton>
+        </Tooltip>
       </Stack>
     </Stack>
   );
