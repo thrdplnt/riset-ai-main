@@ -112,6 +112,10 @@ export default function UsersPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy, sortOrder]);
 
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
   const handleToggleActive = async (user: User) => {
     const res = await fetch("/api/admin/users", {
       method: "PUT",
@@ -148,19 +152,19 @@ export default function UsersPage() {
   };
 
   const handleAssignClick = () => {
-  if (!selectedPlanId) return;
-  setErrorMsg("");
-  setConfirmOpen(true);
+    if (!selectedPlanId) return;
+    setErrorMsg("");
+    setConfirmOpen(true);
   };
 
   const handleSort = (column: "name" | "email" | "created_at" | "last_usage_at") => {
-  if (sortBy === column) {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-  } else {
-    setSortBy(column);
-    setSortOrder("asc");
-  }
-};
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
 
   const handleConfirmAssign = async () => {
     if (!selectedUser || !selectedPlanId) return;
