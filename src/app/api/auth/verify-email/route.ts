@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyVerifyToken } from "@/utils/jwt";
-import { Pengguna } from "@/domain/User";
+import { users } from "@/domain/users";
 import { ApiResponse } from "@/utils/types";
 
 export async function GET(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    const user = await Pengguna.findById(payload.userId);
+    const user = await users.findById(payload.userId);
     if (!user) {
       return NextResponse.json({
         success: false,
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       } satisfies ApiResponse);
     }
 
-    await Pengguna.verifyEmail(user.id);
+    await users.verifyEmail(user.id);
 
     return NextResponse.json({
       success: true,

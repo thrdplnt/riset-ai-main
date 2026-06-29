@@ -1,4 +1,4 @@
-import { Pengguna } from "@/domain/User";
+import { users } from "@/domain/users";
 import { sendPasswordResetEmail } from "@/lib/mailer";
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   const { email } = await req.json();
   
-  const user = await Pengguna.findByEmail(email);
+  const user = await users.findByEmail(email);
   
   if (!user) {
     return NextResponse.json({ success: true, message: "Jika email terdaftar, link akan dikirim." });
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-  await Pengguna.simpanResetToken(user.id, token, expiresAt);
+  await users.simpanResetToken(user.id, token, expiresAt);
 
   console.log("Sending email to:", email);
   try {

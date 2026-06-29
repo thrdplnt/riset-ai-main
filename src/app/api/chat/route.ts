@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
-import { RuangObrolan } from "@/domain/ChatRoom";
+import { chatRoom } from "@/domain/ChatRoom";
 import { ApiResponse } from "@/utils/types";
 
 function getToken(req: NextRequest): string | null {
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       } satisfies ApiResponse, { status: 401 });
     }
 
-    const chats = await RuangObrolan.getByUserId(payload.userId);
+    const chats = await chatRoom.getByUserId(payload.userId);
 
     return NextResponse.json({
       success: true,
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { title } = await req.json();
-    const chat = await RuangObrolan.buatBaru(
+    const chat = await chatRoom.buatBaru(
       payload.userId,
       title || "New Chat"
     );

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
-import { RuangObrolan } from "@/domain/ChatRoom";
-import { LogInteraksi, Attachment } from "@/domain/InteractionLog";
+import { chatRoom } from "@/domain/ChatRoom";
+import { interactionLog, Attachment } from "@/domain/InteractionLog";
 import { checkQuota } from "@/quota/check";
 import { deductTokens } from "@/quota/deduct";
 import { getModelConfig, callLLM } from "@/providers";
@@ -58,7 +58,7 @@ export async function POST(
 
     const SYSTEM_PROMPT = `You are a helpful AI assistant. Today is ${today} (timezone: ${tz}). When creating diagrams, ASCII art, tables of characters, or any visual representation using text characters, always wrap them inside triple backtick code blocks (\`\`\`) to preserve spacing and alignment. Never present ASCII art as plain text.`;
 
-    const chat = await RuangObrolan.findById(id);
+    const chat = await chatRoom.findById(id);
     if (!chat || chat.user_id !== payload.userId) {
       return NextResponse.json({
         success: false,
@@ -67,8 +67,8 @@ export async function POST(
     }
 
     const modelConfig = await getModelConfig(model_id);
-    const logs = await LogInteraksi.getByRoomId(id, 20);
-    const history = LogInteraksi.toHistory(logs);
+    const logs = await interactionLog.getByRoomId(id, 20);
+    const history = interactionLog.toHistory(logs);
     let effectivePrompt = prompt;
     let llmAttachments: Attachment[] = attachments ?? [];
 
@@ -128,7 +128,7 @@ export async function POST(
       quotaResult.input_tokens
     );
 
-    await LogInteraksi.simpan({
+    await interactionLog.simpan({
       room_id: id,
       model_id,
       user_id: payload.userId,

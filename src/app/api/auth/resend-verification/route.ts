@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Pengguna } from "@/domain/User";
+import { users } from "@/domain/users";
 import { signVerifyToken } from "@/utils/jwt";
 import { sendVerificationEmail } from "@/lib/mailer";
 import { ApiResponse } from "@/utils/types";
@@ -15,9 +15,8 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    const user = await Pengguna.findByEmail(email.trim());
+    const user = await users.findByEmail(email.trim());
 
-    // Jangan kasih tahu apakah email exist atau tidak (mencegah email enumeration)
     if (!user) {
       return NextResponse.json({
         success: true,

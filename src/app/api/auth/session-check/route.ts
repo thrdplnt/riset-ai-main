@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
-import { SesiPerangkat } from "@/domain/DeviceSession";
+import { deviceSession } from "@/domain/DeviceSession";
 import { ApiResponse } from "@/utils/types";
 
 export async function GET(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       } satisfies ApiResponse, { status: 401 });
     }
 
-    const session = await SesiPerangkat.findByToken(token);
+    const session = await deviceSession.findByToken(token);
     if (!session) {
       return NextResponse.json({
         success: false,

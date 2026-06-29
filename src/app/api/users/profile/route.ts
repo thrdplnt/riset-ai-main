@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Pengguna } from "@/domain/User";
+import { users } from "@/domain/users";
 import { verifyJwt } from "@/utils/jwt";
 
 export async function GET(req: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const payload = await verifyJwt(token);
   if (!payload) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
-  const user = await Pengguna.findById(payload.userId);
+  const user = await users.findById(payload.userId);
   if (!user) return NextResponse.json({ success: false, message: "User tidak ditemukan" }, { status: 404 });
 
   return NextResponse.json({
@@ -33,7 +33,7 @@ export async function PUT(req: NextRequest) {
 
   if (!name) return NextResponse.json({ success: false, message: "Nama wajib diisi" }, { status: 400 });
 
-  await Pengguna.updateProfile(payload.userId, { name, telp });
+  await users.updateProfile(payload.userId, { name, telp });
 
   return NextResponse.json({ success: true, message: "Profil berhasil diperbarui" });
 }

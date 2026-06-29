@@ -21,7 +21,7 @@ function parseAttachments(raw: unknown): Attachment[] {
   return [];
 }
 
-export class LogInteraksi {
+export class interactionLog {
   id: string;
   room_id: string;
   model_id: string;
@@ -58,7 +58,7 @@ export class LogInteraksi {
     output_tokens: number;
     attachments?: Attachment[];
     used_web_search?: boolean;
-  }): Promise<LogInteraksi> {
+  }): Promise<interactionLog> {
     const id = crypto.randomUUID();
     const rows = await sql`
       INSERT INTO interaction_logs (
@@ -73,24 +73,24 @@ export class LogInteraksi {
       )
       RETURNING *
     `;
-    return new LogInteraksi(rows[0] as unknown as InteractionLog & { attachments: unknown });
+    return new interactionLog(rows[0] as unknown as InteractionLog & { attachments: unknown });
   }
 
   // Untuk dikirim ke LLM (context) — TETAP dibatasi 20 biar hemat token
   static async getByRoomId(
     roomId: string,
     limit: number = 20
-  ): Promise<LogInteraksi[]> {
+  ): Promise<interactionLog[]> {
     const rows = await sql`
       SELECT * FROM interaction_logs
       WHERE room_id = ${roomId}
       ORDER BY interacted_at ASC
       LIMIT ${limit}
     `;
-    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown }));
+    return rows.map((r) => new interactionLog(r as unknown as InteractionLog & { attachments: unknown }));
   }
 
-  static async getAllByRoomId(roomId: string): Promise<LogInteraksi[]> {
+  static async getAllByRoomId(roomId: string): Promise<interactionLog[]> {
     const rows = await sql`
       SELECT il.*, m.display_name as model_display_name
       FROM interaction_logs il
@@ -98,10 +98,10 @@ export class LogInteraksi {
       WHERE il.room_id = ${roomId}
       ORDER BY il.interacted_at ASC
     `;
-    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown; model_display_name: string }));
+    return rows.map((r) => new interactionLog(r as unknown as InteractionLog & { attachments: unknown; model_display_name: string }));
   }
 
-  static async getByUserId(userId: string): Promise<LogInteraksi[]> {
+  static async getByUserId(userId: string): Promise<interactionLog[]> {
     const rows = await sql`
       SELECT il.*, m.display_name as model_display_name
       FROM interaction_logs il
@@ -109,11 +109,11 @@ export class LogInteraksi {
       WHERE il.user_id = ${userId}
       ORDER BY il.interacted_at DESC
     `;
-    return rows.map((r) => new LogInteraksi(r as unknown as InteractionLog & { attachments: unknown }));
+    return rows.map((r) => new interactionLog(r as unknown as InteractionLog & { attachments: unknown }));
   }
 
   static toHistory(
-    logs: LogInteraksi[]
+    logs: interactionLog[]
   ): { role: "user" | "assistant"; content: string; attachments?: Attachment[] }[] {
     return logs.flatMap((log) => [
       { role: "user" as const, content: log.prompt_text, attachments: log.attachments },

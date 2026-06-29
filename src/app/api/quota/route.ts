@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
-import { DompetToken } from "@/domain/TokenBalance";
+import { tokenBalance } from "@/domain/TokenBalance";
 import sql from "@/db/postgres";
 import { ApiResponse } from "@/utils/types";
 
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    const balance = await DompetToken.getOrCreate(payload.userId, modelId);
+    const balance = await tokenBalance.getOrCreate(payload.userId, modelId);
 
     let planName: string | null = null;
     let expiresAt: string | null = null;

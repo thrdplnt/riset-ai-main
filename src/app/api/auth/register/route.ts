@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Pengguna } from "@/domain/User";
+import { users } from "@/domain/users";
 import { signVerifyToken } from "@/utils/jwt";
 import { sendVerificationEmail } from "@/lib/mailer";
 import { isValidEmailDomain } from "@/utils/emailValidator";
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    const existing = await Pengguna.findByEmail(email.trim());
+    const existing = await users.findByEmail(email.trim());
     if (existing) {
       return NextResponse.json({
         success: false,
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 409 });
     }
 
-    const user = await Pengguna.create({
+    const user = await users.create({
       name: name.trim(),
       email: email.trim(),
       telp: telp.trim(),

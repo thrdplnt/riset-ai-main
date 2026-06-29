@@ -1,7 +1,7 @@
 import sql from "@/db/postgres";
 import { ChatRoom } from "@/utils/types";
 
-export class RuangObrolan {
+export class chatRoom {
   id: string;
   user_id: string;
   title: string;
@@ -14,31 +14,31 @@ export class RuangObrolan {
     this.created_at = data.created_at;
   }
 
-  static async buatBaru(userId: string, title: string): Promise<RuangObrolan> {
+  static async buatBaru(userId: string, title: string): Promise<chatRoom> {
     const id = crypto.randomUUID();
     const rows = await sql`
       INSERT INTO chat_rooms (id, user_id, title, created_at)
       VALUES (${id}, ${userId}, ${title}, NOW())
       RETURNING *
     `;
-    return new RuangObrolan(rows[0] as ChatRoom);
+    return new chatRoom(rows[0] as ChatRoom);
   }
 
-  static async findById(id: string): Promise<RuangObrolan | null> {
+  static async findById(id: string): Promise<chatRoom | null> {
     const rows = await sql`
       SELECT * FROM chat_rooms WHERE id = ${id} LIMIT 1
     `;
     if (rows.length === 0) return null;
-    return new RuangObrolan(rows[0] as ChatRoom);
+    return new chatRoom(rows[0] as ChatRoom);
   }
 
-  static async getByUserId(userId: string): Promise<RuangObrolan[]> {
+  static async getByUserId(userId: string): Promise<chatRoom[]> {
     const rows = await sql`
       SELECT * FROM chat_rooms
       WHERE user_id = ${userId}
       ORDER BY created_at DESC
     `;
-    return rows.map((r) => new RuangObrolan(r as ChatRoom));
+    return rows.map((r) => new chatRoom(r as ChatRoom));
   }
 
   static async hapus(id: string): Promise<void> {

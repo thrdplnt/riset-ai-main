@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Pengguna } from "@/domain/User";
-import { SesiPerangkat } from "@/domain/DeviceSession";
+import { users } from "@/domain/users";
+import { deviceSession } from "@/domain/DeviceSession";
 import { signJwt } from "@/utils/jwt";
 import { ApiResponse } from "@/utils/types";
 
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 400 });
     }
 
-    const user = await Pengguna.findByEmail(email);
+    const user = await users.findByEmail(email);
     if (!user) {
       return NextResponse.json({
         success: false,
@@ -45,9 +45,9 @@ export async function POST(req: NextRequest) {
       } satisfies ApiResponse, { status: 401 });
     }
 
-    const sessionCount = await SesiPerangkat.hitungSesiAktif(user.id);
-    if (SesiPerangkat.isMaksimum(sessionCount)) {
-      await SesiPerangkat.hapusSessionTerlama(user.id);
+    const sessionCount = await deviceSession.hitungSesiAktif(user.id);
+    if (deviceSession.isMaksimum(sessionCount)) {
+      await deviceSession.hapusSessionTerlama(user.id);
     }
 
     const sessionId = crypto.randomUUID();
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     });
 
     const device = req.headers.get("user-agent") || "Unknown device";
-    await SesiPerangkat.buatSesiBaru({
+    await deviceSession.buatSesiBaru({
       userId: user.id,
       token,
       device,

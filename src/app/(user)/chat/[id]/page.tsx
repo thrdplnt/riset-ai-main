@@ -252,27 +252,20 @@ export default function ChatRoomPage() {
                 ))}
 
                 {loading && (
-                  <Stack sx={{ flexDirection: "row", alignItems: "center", gap: 1.5 }}>
-                    <Box component="img" src="/favicon.ico" alt="AI"
-                      sx={{ width: 28, height: 28, borderRadius: "8px",
-                        objectFit: "cover", flexShrink: 0 }} />
-                    <Box sx={{ px: 2, py: 1.25, borderRadius: "4px 16px 16px 16px",
-                      bgcolor: "rgba(0,0,0,0.04)", border: "1px solid",
-                      borderColor: "custom.borderLight" }}>
-                      <Stack sx={{ flexDirection: "row", alignItems: "center", gap: 0.5 }}>
-                        {[0, 0.15, 0.3].map((delay) => (
-                          <Box key={delay} sx={{ width: 6, height: 6, borderRadius: "50%",
-                            bgcolor: "text.secondary",
-                            animation: "bounce 1s ease infinite",
-                            animationDelay: `${delay}s`,
-                            "@keyframes bounce": {
-                              "0%, 80%, 100%": { transform: "scale(0.8)" },
-                              "40%": { transform: "scale(1.2)" },
-                            } }} />
-                        ))}
-                      </Stack>
-                    </Box>
-                  </Stack>
+                  <Box sx={{ px: 0, py: 0.5, width: "100%" }}>
+                    <Stack sx={{ flexDirection: "row", alignItems: "center", gap: 0.5 }}>
+                      {[0, 0.15, 0.3].map((delay) => (
+                        <Box key={delay} sx={{ width: 6, height: 6, borderRadius: "50%",
+                          bgcolor: "text.secondary",
+                          animation: "bounce 1s ease infinite",
+                          animationDelay: `${delay}s`,
+                          "@keyframes bounce": {
+                            "0%, 80%, 100%": { transform: "scale(0.8)" },
+                            "40%": { transform: "scale(1.2)" },
+                          } }} />
+                      ))}
+                    </Stack>
+                  </Box>
                 )}
                 <div ref={bottomRef} />
               </Box>

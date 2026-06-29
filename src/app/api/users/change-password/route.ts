@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Pengguna } from "@/domain/User";
+import { users } from "@/domain/users";
 import { verifyJwt } from "@/utils/jwt";
 
 export async function PUT(req: NextRequest) {
@@ -25,7 +25,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: false, message: "Password baru harus kombinasi huruf dan angka" }, { status: 400 });
   }
 
-  const user = await Pengguna.findById(payload.userId);
+  const user = await users.findById(payload.userId);
   if (!user) return NextResponse.json({ success: false, message: "User tidak ditemukan" }, { status: 404 });
 
   const valid = await user.autentikasi(currentPassword);

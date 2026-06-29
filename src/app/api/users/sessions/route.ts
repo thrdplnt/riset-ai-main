@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SesiPerangkat } from "@/domain/DeviceSession";
+import { deviceSession } from "@/domain/DeviceSession";
 import { verifyJwt } from "@/utils/jwt";
 import sql from "@/db/postgres";
 
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const payload = await verifyJwt(token);
   if (!payload) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
-  const sessions = await SesiPerangkat.getByUserId(payload.userId); // sudah ada
+  const sessions = await deviceSession.getByUserId(payload.userId); // sudah ada
 
   return NextResponse.json({
     success: true,
@@ -32,7 +32,7 @@ export async function DELETE(req: NextRequest) {
   if (!payload) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
   // hapus semua lalu aktifkan kembali yang current
-  await SesiPerangkat.hapusSemua(payload.userId); // sudah ada
+  await deviceSession.hapusSemua(payload.userId); // sudah ada
   // buat ulang sesi current tetap aktif tidak bisa, jadi skip sesi current saja
   await sql`UPDATE device_sessions SET is_active = true WHERE id = ${payload.sessionId}`;
 

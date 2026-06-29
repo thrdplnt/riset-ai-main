@@ -5,7 +5,7 @@ import { DeviceSession } from "@/utils/types";
 
 const MAX_SESSIONS = 2;
 
-export class SesiPerangkat {
+export class deviceSession {
   id: string;
   user_id: string;
   device: string;
@@ -39,7 +39,7 @@ export class SesiPerangkat {
     userId: string;
     token: string;
     device: string;
-  }): Promise<SesiPerangkat> {
+  }): Promise<deviceSession> {
     const id = crypto.randomUUID();
     const token_hash = hashToken(data.token);
     const expires_at = getExpiryDate();
@@ -59,10 +59,10 @@ export class SesiPerangkat {
       )
       RETURNING *
     `;
-    return new SesiPerangkat(rows[0] as DeviceSession);
+    return new deviceSession(rows[0] as DeviceSession);
   }
 
-  static async findByToken(token: string): Promise<SesiPerangkat | null> {
+  static async findByToken(token: string): Promise<deviceSession | null> {
     const token_hash = hashToken(token);
     const rows = await sql`
       SELECT * FROM device_sessions
@@ -72,10 +72,10 @@ export class SesiPerangkat {
       LIMIT 1
     `;
     if (rows.length === 0) return null;
-    return new SesiPerangkat(rows[0] as DeviceSession);
+    return new deviceSession(rows[0] as DeviceSession);
   }
 
-  static async getByUserId(userId: string): Promise<SesiPerangkat[]> {
+  static async getByUserId(userId: string): Promise<deviceSession[]> {
     const rows = await sql`
       SELECT * FROM device_sessions
       WHERE user_id = ${userId}
@@ -83,7 +83,7 @@ export class SesiPerangkat {
         AND expires_at > NOW()
       ORDER BY created_at DESC
     `;
-    return rows.map((row) => new SesiPerangkat(row as DeviceSession));
+    return rows.map((row) => new deviceSession(row as DeviceSession));
   }
 
   static async hapusSesiById(id: string): Promise<void> {

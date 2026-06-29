@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
-import { RuangObrolan } from "@/domain/ChatRoom";
-import { LogInteraksi } from "@/domain/InteractionLog";
+import { chatRoom } from "@/domain/ChatRoom";
+import { interactionLog } from "@/domain/InteractionLog";
 import { ApiResponse } from "@/utils/types";
 
 function getToken(req: NextRequest): string | null {
@@ -27,7 +27,7 @@ export async function GET(
       } satisfies ApiResponse, { status: 401 });
     }
 
-    const chat = await RuangObrolan.findById(id);
+    const chat = await chatRoom.findById(id);
     if (!chat || chat.user_id !== payload.userId) {
       return NextResponse.json({
         success: false,
@@ -35,7 +35,7 @@ export async function GET(
       } satisfies ApiResponse, { status: 404 });
     }
 
-    const history = await LogInteraksi.getAllByRoomId(id);
+    const history = await interactionLog.getAllByRoomId(id);
 
     return NextResponse.json({
       success: true,
@@ -68,7 +68,7 @@ export async function DELETE(
       } satisfies ApiResponse, { status: 401 });
     }
 
-    const chat = await RuangObrolan.findById(id);
+    const chat = await chatRoom.findById(id);
     if (!chat || chat.user_id !== payload.userId) {
       return NextResponse.json({
         success: false,
@@ -76,7 +76,7 @@ export async function DELETE(
       } satisfies ApiResponse, { status: 404 });
     }
 
-    await RuangObrolan.hapus(id);
+    await chatRoom.hapus(id);
 
     return NextResponse.json({
       success: true,

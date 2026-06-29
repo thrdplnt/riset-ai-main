@@ -1,7 +1,7 @@
 import sql from "@/db/postgres";
 import { TokenBalance } from "@/utils/types";
 
-export class DompetToken {
+export class tokenBalance {
   id: string;
   user_id: string;
   model_id: string;
@@ -25,7 +25,7 @@ export class DompetToken {
   static async getOrCreate(
     userId: string,
     modelId: string
-  ): Promise<DompetToken | null> {
+  ): Promise<tokenBalance | null> {
     const modelExists = await sql`
       SELECT id FROM models WHERE id = ${modelId} AND is_active = true
     `;
@@ -57,7 +57,7 @@ export class DompetToken {
     `;
 
     if (existing.length > 0) {
-      return new DompetToken(existing[0] as TokenBalance);
+      return new tokenBalance(existing[0] as TokenBalance);
     }
 
     // Buat baru on-demand
@@ -73,7 +73,7 @@ export class DompetToken {
       RETURNING *
     `;
 
-    return new DompetToken(rows[0] as TokenBalance);
+    return new tokenBalance(rows[0] as TokenBalance);
   }
 
   static async getAllByUser(userId: string): Promise<{

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SesiPerangkat } from "@/domain/DeviceSession";
+import { deviceSession } from "@/domain/DeviceSession";
 import { verifyJwt } from "@/utils/jwt";
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -15,7 +15,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ success: false, message: "Tidak bisa menghapus sesi aktif" }, { status: 400 });
   }
 
-  await SesiPerangkat.hapusSesiById(id);
+  await deviceSession.hapusSesiById(id);
 
   return NextResponse.json({ success: true, message: "Sesi berhasil dihapus" });
 }

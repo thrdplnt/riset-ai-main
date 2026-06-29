@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
-import { DompetToken } from "@/domain/TokenBalance";
+import { tokenBalance } from "@/domain/TokenBalance";
 import sql from "@/db/postgres";
 import { ApiResponse } from "@/utils/types";
 
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     `;
 
     // Ambil token per model
-    const tokens = await DompetToken.getAllByUser(payload.userId);
+    const tokens = await tokenBalance.getAllByUser(payload.userId);
 
     // Ambil history interaksi
     const history = await sql`

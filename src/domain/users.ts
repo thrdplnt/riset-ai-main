@@ -2,7 +2,7 @@ import sql from "@/db/postgres";
 import { hashPassword, verifyPassword } from "@/utils/hash";
 import { User, UserRole } from "@/utils/types";
 
-export class Pengguna {
+export class users {
   id: string;
   name: string;
   email: string;
@@ -23,20 +23,20 @@ export class Pengguna {
     this.created_at = data.created_at;
   }
 
-  static async findByEmail(email: string): Promise<Pengguna | null> {
+  static async findByEmail(email: string): Promise<users | null> {
     const rows = await sql`
       SELECT * FROM users WHERE email = ${email} LIMIT 1
     `;
     if (rows.length === 0) return null;
-    return new Pengguna(rows[0] as User);
+    return new users(rows[0] as User);
   }
 
-  static async findById(id: string): Promise<Pengguna | null> {
+  static async findById(id: string): Promise<users | null> {
     const rows = await sql`
       SELECT * FROM users WHERE id = ${id} LIMIT 1
     `;
     if (rows.length === 0) return null;
-    return new Pengguna(rows[0] as User);
+    return new users(rows[0] as User);
   }
 
   static async create(data: {
@@ -44,7 +44,7 @@ export class Pengguna {
     email: string;
     telp: string;
     password: string;
-  }): Promise<Pengguna> {
+  }): Promise<users> {
     const id = crypto.randomUUID();
     const password = await hashPassword(data.password);
 
@@ -62,13 +62,13 @@ export class Pengguna {
       )
       RETURNING *
     `;
-    return new Pengguna(rows[0] as User);
+    return new users(rows[0] as User);
   }
 
   static async updateProfile(
     id: string,
     data: { name: string; telp: string }
-  ): Promise<Pengguna | null> {
+  ): Promise<users | null> {
     const rows = await sql`
       UPDATE users
       SET name = ${data.name},
@@ -77,7 +77,7 @@ export class Pengguna {
       RETURNING *
     `;
     if (rows.length === 0) return null;
-    return new Pengguna(rows[0] as User);
+    return new users(rows[0] as User);
   }
 
   static async updateRole(id: string, role: UserRole): Promise<void> {
