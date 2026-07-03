@@ -19,9 +19,9 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json({
-        success: true,
-        message: "Link verifikasi baru telah dikirim",
-      } satisfies ApiResponse);
+        success: false,
+        message: "Email anda belum didaftarkan. Daftar akun terlebih dahulu untuk mendapatkan link verifikasi.",
+      } satisfies ApiResponse, { status: 404 });
     }
 
     if (user.verified_at) {

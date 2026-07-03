@@ -66,7 +66,11 @@ export default function LoginPage() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      setResendMessage(data.message);
+      if (data.success) {
+        setResendMessage(data.message);
+      } else {
+        setError(data.message ?? "Gagal mengirim ulang email verifikasi");
+      }
     } catch {
       setError("Gagal mengirim ulang email verifikasi");
     } finally {
