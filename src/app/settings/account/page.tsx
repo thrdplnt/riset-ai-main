@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 function getToken() {
   return document.cookie
@@ -19,6 +20,7 @@ function getToken() {
 }
 
 export default function AccountPage() {
+  const { updateUser } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [telp, setTelp] = useState("");
@@ -65,6 +67,7 @@ export default function AccountPage() {
         setError(data.message || "Terjadi kesalahan.");
       } else {
         setSuccess("Profil berhasil diperbarui.");
+        updateUser({ name });
       }
     } catch {
       setError("Tidak dapat terhubung ke server.");

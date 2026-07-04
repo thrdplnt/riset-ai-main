@@ -237,10 +237,10 @@ export default function ChatPage() {
           return [target, ...rest];
         });
       } else {
-        setLimitError(data.message);
+        // Tampilkan pesan error sebagai bubble tanpa prefix "Error:"
         setMessages((prev) => [...prev, {
           id: crypto.randomUUID(), role: "assistant",
-          content: `Error: ${data.message}`,
+          content: data.message,
         }]);
       }
     } catch {
