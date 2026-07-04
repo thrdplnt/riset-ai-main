@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/routes";
 
@@ -15,13 +15,46 @@ interface AuthContextType {
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
+  updateUser: (partial: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const SESSION_CHECK_INTERVAL = 15000;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const forceLogout = (message?: string) => {
+    document.cookie = "token=; path=/; max-age=0";
+    localStorage.removeItem("risetai_user");
+    setUser(null);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (message) {
+      sessionStorage.setItem("logout_reason", message);
+    }
+    router.push(ROUTES.LOGIN);
+  };
+
+  const checkSession = async () => {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+
+    if (!token) return;
+
+    try {
+      const res = await fetch("/api/auth/session-check");
+      const data = await res.json();
+      if (!data.success) {
+        forceLogout("Sesi berakhir: Batas login 2 perangkat telah terlampaui. ");
+      }
+    } catch {
+    }
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem("risetai_user");
@@ -29,6 +62,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try { setUser(JSON.parse(stored)); } catch {}
     }
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    checkSession();
+    intervalRef.current = setInterval(checkSession, SESSION_CHECK_INTERVAL);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -52,13 +97,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("risetai_user", JSON.stringify(userInfo));
       setUser(userInfo);
 
-      // Semua role ke chat dulu
       router.push(ROUTES.CHAT);
 
       return {};
     } catch {
       return { error: "Terjadi kesalahan, coba lagi" };
     }
+  };
+
+  const updateUser = (partial: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...partial };
+      localStorage.setItem("risetai_user", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const logout = async () => {
@@ -74,14 +127,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     }
 
-    document.cookie = "token=; path=/; max-age=0";
-    localStorage.removeItem("risetai_user");
-    setUser(null);
-    router.push(ROUTES.LOGIN);
+    forceLogout();
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
