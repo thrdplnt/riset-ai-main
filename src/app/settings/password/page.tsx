@@ -80,8 +80,8 @@ export default function PasswordPage() {
     <InputAdornment position="end">
       <IconButton onClick={onToggle} edge="end" size="small">
         {show
-          ? <VisibilityOffOutlinedIcon fontSize="small" />
-          : <VisibilityOutlinedIcon fontSize="small" />
+          ? <VisibilityOutlinedIcon fontSize="small" />
+          : <VisibilityOffOutlinedIcon fontSize="small" />
         }
       </IconButton>
     </InputAdornment>
@@ -116,11 +116,20 @@ export default function PasswordPage() {
             </Typography>
             <TextField
               id="currentPassword"
+              name="current-password"
               type={showCurrent ? "text" : "password"}
               fullWidth
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="••••••••"
+              autoComplete="current-password"
+              sx={{
+                input: {
+                  '::-ms-clear': { display: 'none' },
+                  '::-ms-reveal': { display: 'none' },
+                  '::-webkit-textfield-decoration-container': { display: 'none' },
+                },
+              }}
               slotProps={{
                 input: {
                   endAdornment: <EyeToggle show={showCurrent} onToggle={() => setShowCurrent(!showCurrent)} />,
@@ -135,11 +144,20 @@ export default function PasswordPage() {
             </Typography>
             <TextField
               id="newPassword"
+              name="new-password"
               type={showNew ? "text" : "password"}
               fullWidth
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Min. 8 karakter, kombinasi huruf & angka"
+              autoComplete="new-password"
+              sx={{
+                input: {
+                  '::-ms-clear': { display: 'none' },
+                  '::-ms-reveal': { display: 'none' },
+                  '::-webkit-textfield-decoration-container': { display: 'none' },
+                },
+              }}
               slotProps={{
                 input: {
                   endAdornment: <EyeToggle show={showNew} onToggle={() => setShowNew(!showNew)} />,
@@ -154,11 +172,20 @@ export default function PasswordPage() {
             </Typography>
             <TextField
               id="confirmPassword"
+              name="confirm-password"
               type={showConfirm ? "text" : "password"}
               fullWidth
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Ulangi password baru"
+              autoComplete="new-password"
+              sx={{
+                input: {
+                  '::-ms-clear': { display: 'none' },
+                  '::-ms-reveal': { display: 'none' },
+                  '::-webkit-textfield-decoration-container': { display: 'none' },
+                },
+              }}
               slotProps={{
                 input: {
                   endAdornment: <EyeToggle show={showConfirm} onToggle={() => setShowConfirm(!showConfirm)} />,

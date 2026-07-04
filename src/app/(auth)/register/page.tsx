@@ -253,7 +253,7 @@ export default function RegisterPage() {
                         size="small"
                         sx={{ border: "none" }}
                       >
-                        {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" /> : <VisibilityOutlinedIcon fontSize="small" />}
+                        {showPassword ? <VisibilityOutlinedIcon fontSize="small" /> : <VisibilityOffOutlinedIcon fontSize="small" />}
                       </IconButton>
                     </InputAdornment>
                   ),
@@ -277,7 +277,7 @@ export default function RegisterPage() {
                         size="small"
                         sx={{ border: "none" }}
                       >
-                        {showConfirmPassword ? <VisibilityOffOutlinedIcon fontSize="small" /> : <VisibilityOutlinedIcon fontSize="small" />}
+                        {showConfirmPassword ? <VisibilityOutlinedIcon fontSize="small" /> : <VisibilityOffOutlinedIcon fontSize="small" />}
                       </IconButton>
                     </InputAdornment>
                   ),

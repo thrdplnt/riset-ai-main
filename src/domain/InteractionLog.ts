@@ -60,7 +60,7 @@ export class interactionLog {
     used_web_search?: boolean;
   }): Promise<interactionLog> {
     const id = crypto.randomUUID();
-    const rows = await sql`
+    await sql`
       INSERT INTO interaction_logs (
         id, room_id, model_id, user_id,
         prompt_text, response_text,
@@ -71,9 +71,16 @@ export class interactionLog {
         ${data.input_tokens}, ${data.output_tokens}, NOW(),
         ${JSON.stringify(data.attachments ?? [])}, ${data.used_web_search ?? false}
       )
-      RETURNING *
     `;
-    return new interactionLog(rows[0] as unknown as InteractionLog & { attachments: unknown });
+
+    const rows = await sql`
+      SELECT il.*, m.display_name as model_display_name
+      FROM interaction_logs il
+      JOIN models m ON m.id = il.model_id
+      WHERE il.id = ${id}
+    `;
+
+    return new interactionLog(rows[0] as unknown as InteractionLog & { attachments: unknown; model_display_name: string });
   }
 
   // Untuk dikirim ke LLM (context) — TETAP dibatasi 20 biar hemat token
