@@ -1,40 +1,21 @@
-import { encodingForModel } from 'js-tiktoken';
-
 function countOpenAITokens(
   prompt: string,
   history: { role: string; content: string }[],
   system_prompt: string
 ): number {
-  try {
-    const enc = encodingForModel('gpt-4o');  
-    let total = 0;
 
-    if (system_prompt) {
-      total += enc.encode(system_prompt).length + 4; 
-    }
+  const allText = [
+    system_prompt,
+    ...history.map(h => h.content),
+    prompt
+  ].join(' ');
 
-    for (const msg of history) {
-      total += enc.encode(msg.content).length + 4;
-    }
+  const messageCount = history.length + 2; 
+  const overhead = messageCount * 4 + 3;
 
-    for (const msg of history) {
-      total += enc.encode(msg.content).length + 4;
-      if ((msg as any).attachments?.length > 0) {
-        total += 10;
-      }
-    }
-
-    total += enc.encode(prompt).length + 4;
-
-    total += 3;
-
-    return total;
-  } catch {
-
-    const allText = [system_prompt, ...history.map(h => h.content), prompt].join(' ');
-    return Math.ceil(allText.length / 3.5);
-  }
+  return Math.ceil(allText.length / 3.5) + overhead;
 }
+
 async function countInputTokensGemini(
   base_url: string,
   model_name: string,
