@@ -171,7 +171,7 @@ export default function LoginPage() {
                         size="small"
                         sx={{ border: "none" }}
                       >
-                        {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" /> : <VisibilityOutlinedIcon fontSize="small" />}
+                        {showPassword ? <VisibilityOutlinedIcon fontSize="small" /> : <VisibilityOffOutlinedIcon fontSize="small" />}
                       </IconButton>
                     </InputAdornment>
                   ),

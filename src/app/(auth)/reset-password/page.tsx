@@ -1,10 +1,12 @@
 "use client";
 
-import { Alert, Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, IconButton, InputAdornment, Stack, TextField, Typography } from "@mui/material";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { ROUTES } from "@/routes";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -13,6 +15,8 @@ function ResetPasswordForm() {
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,12 +79,37 @@ function ResetPasswordForm() {
           </Typography>
           <TextField
             id="password"
-            type="password"
+            name="new-password"
+            type={showPassword ? "text" : "password"}
             fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Min. 8 karakter, kombinasi huruf & angka"
             disabled={success}
+            autoComplete="new-password"
+            sx={{
+              input: {
+                '::-ms-clear': { display: 'none' },
+                '::-ms-reveal': { display: 'none' },
+                '::-webkit-textfield-decoration-container': { display: 'none' },
+              },
+            }}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword((value) => !value)}
+                      edge="end"
+                      size="small"
+                      aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                    >
+                      {showPassword ? <VisibilityOutlinedIcon fontSize="small" /> : <VisibilityOffOutlinedIcon fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
           />
         </Stack>
 
@@ -90,12 +119,37 @@ function ResetPasswordForm() {
           </Typography>
           <TextField
             id="confirm"
-            type="password"
+            name="confirm-password"
+            type={showConfirm ? "text" : "password"}
             fullWidth
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="Ulangi password baru"
             disabled={success}
+            autoComplete="new-password"
+            sx={{
+              input: {
+                '::-ms-clear': { display: 'none' },
+                '::-ms-reveal': { display: 'none' },
+                '::-webkit-textfield-decoration-container': { display: 'none' },
+              },
+            }}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirm((value) => !value)}
+                      edge="end"
+                      size="small"
+                      aria-label={showConfirm ? "Sembunyikan password" : "Tampilkan password"}
+                    >
+                      {showConfirm ? <VisibilityOutlinedIcon fontSize="small" /> : <VisibilityOffOutlinedIcon fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
           />
         </Stack>
 
