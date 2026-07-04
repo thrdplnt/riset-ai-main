@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Box, CircularProgress, Typography, Button, Stack } from "@mui/material";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import { ROUTES } from "@/routes";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -93,5 +93,19 @@ export default function VerifyEmailPage() {
         )}
       </Stack>
     </Box>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense 
+      fallback={
+        <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <CircularProgress size={40} />
+        </Box>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
