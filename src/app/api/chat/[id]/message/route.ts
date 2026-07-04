@@ -128,7 +128,7 @@ export async function POST(
       quotaResult.input_tokens
     );
 
-    await interactionLog.simpan({
+    const savedLog = await interactionLog.simpan({
       room_id: id,
       model_id,
       user_id: payload.userId,
@@ -155,20 +155,24 @@ export async function POST(
       message: "Pesan berhasil dikirim",
       data: {
         response: llmResponse.text,
+        prompt_text: savedLog.prompt_text,
+        interacted_at: savedLog.interacted_at,
+        model_id: savedLog.model_display_name ?? model_id,
         input_tokens: llmResponse.input_tokens,
         output_tokens: llmResponse.output_tokens,
         remaining_quota: Math.max(
-        quotaResult.remaining_quota - llmResponse.input_tokens - llmResponse.output_tokens,
-        0
+          quotaResult.remaining_quota - llmResponse.input_tokens - llmResponse.output_tokens,
+          0
         ),
-        // warning: quotaResult.warning,
       },
     } satisfies ApiResponse<{
       response: string;
+      prompt_text: string;
+      interacted_at: Date;
+      model_id: string;
       input_tokens: number;
       output_tokens: number;
       remaining_quota: number;
-      // warning: string | undefined;
     }>);
 
   } catch (error) {
