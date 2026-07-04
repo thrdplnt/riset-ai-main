@@ -116,7 +116,7 @@ export const ModelSelector = ({
               <Typography variant="body2" sx={{ flex: 1, fontWeight: 500, fontSize: "13px" }}>
                 {model.display_name}
               </Typography>
-              ...
+              {model.id === value && <CheckIcon sx={{ fontSize: 14, color: "primary.main", ml: "auto" }} />}
             </Stack>
           </MenuItem>
         ))}
