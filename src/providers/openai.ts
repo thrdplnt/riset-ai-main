@@ -44,10 +44,19 @@ export async function callOpenAI(
     ? (getOpenAISearchModel(config.model_name) ?? config.model_name)
     : config.model_name;
 
+  const SEARCH_MODEL_MAX_OUTPUT: Record<string, number> = {
+    'gpt-5-search-api':              100000,
+    'gpt-5-search-api-2025-10-14':   100000,
+    'gpt-4o-search-preview':          16384,
+    'gpt-4o-mini-search-preview':     16384,
+  };
+
+  const effectiveMaxOutput = SEARCH_MODEL_MAX_OUTPUT[effectiveModel] ?? req.quota_limit;
+
   const body: any = {
     model: effectiveModel,
     messages,
-    max_tokens: req.quota_limit,
+    max_completion_tokens: effectiveMaxOutput,
   };
 
   if (req.web_search && supportsOpenAIWebSearch(config.model_name)) {

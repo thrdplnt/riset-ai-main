@@ -1,3 +1,40 @@
+import { encodingForModel } from 'js-tiktoken';
+
+function countOpenAITokens(
+  prompt: string,
+  history: { role: string; content: string }[],
+  system_prompt: string
+): number {
+  try {
+    const enc = encodingForModel('gpt-4o');  
+    let total = 0;
+
+    if (system_prompt) {
+      total += enc.encode(system_prompt).length + 4; 
+    }
+
+    for (const msg of history) {
+      total += enc.encode(msg.content).length + 4;
+    }
+
+    for (const msg of history) {
+      total += enc.encode(msg.content).length + 4;
+      if ((msg as any).attachments?.length > 0) {
+        total += 10;
+      }
+    }
+
+    total += enc.encode(prompt).length + 4;
+
+    total += 3;
+
+    return total;
+  } catch {
+
+    const allText = [system_prompt, ...history.map(h => h.content), prompt].join(' ');
+    return Math.ceil(allText.length / 3.5);
+  }
+}
 async function countInputTokensGemini(
   base_url: string,
   model_name: string,
@@ -96,7 +133,8 @@ export async function estimateTotalTokens(
       break;
     case 'openai':
     default:
-      input_tokens = fallbackEstimate(prompt, history, system_prompt);
+      // input_tokens = fallbackEstimate(prompt, history, system_prompt);
+      input_tokens = countOpenAITokens(prompt, history, system_prompt);
       break;
   }
 

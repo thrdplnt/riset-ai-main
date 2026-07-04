@@ -40,17 +40,19 @@ export async function callLLM(
   let effectiveMaxOutput: number;
 
   if (remaining_quota !== undefined && input_tokens !== undefined) {
+
     effectiveMaxOutput = Math.max(
       Math.min(
         config.max_output_tokens,
+        config.max_input_tokens - input_tokens,
         remaining_quota - input_tokens
       ),
       0
     );
+
   } else {
     effectiveMaxOutput = config.max_output_tokens;
   }
-
 
   const safeReq = { ...req, quota_limit: effectiveMaxOutput };
   switch (config.provider_id) {
