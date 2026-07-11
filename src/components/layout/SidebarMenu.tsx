@@ -123,15 +123,21 @@ const SectionLabel = ({ children, first = false }: { children: React.ReactNode; 
 interface SidebarMenuProps {
   role: "user" | "admin";
   onLogout: () => void;
+  onNavigate?: () => void;
 }
 
-export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
+export default function SidebarMenu({ role, onLogout, onNavigate }: SidebarMenuProps) {
   const pathname = usePathname();
   const router = useRouter();
   const theme = useTheme();
 
   const mainItems =
     role === "admin" ? adminMenuItems : userMenuItems;
+
+  const handleNavigate = (path: string) => {
+    router.push(path);
+    onNavigate?.();
+  };
 
   return (
     <List disablePadding sx={{ px: 1 }}>
@@ -140,7 +146,7 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
         <MenuItemButton
           key={item.path}
           selected={pathname === item.path}
-          onClick={() => router.push(item.path)}
+          onClick={() => handleNavigate(item.path)}
         >
           <ListItemIcon
             sx={{
@@ -178,7 +184,7 @@ export default function SidebarMenu({ role, onLogout }: SidebarMenuProps) {
             <MenuItemButton
               key={item.path}
               selected={pathname === item.path}
-              onClick={() => router.push(item.path)}
+              onClick={() => handleNavigate(item.path)}
             >
               <ListItemIcon
                 sx={{

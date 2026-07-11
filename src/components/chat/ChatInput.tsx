@@ -325,7 +325,9 @@ export const ChatInput = ({
               disabled={!supportsWebSearch || disabled}
               sx={{
                 display: "flex", alignItems: "center", gap: 0.625,
-                height: 30, px: 1.5, borderRadius: "100px",
+                height: 30,
+                px: { xs: 0.75, sm: 1.5 },
+                borderRadius: "100px",
                 border: "1px solid",
                 borderColor: webSearch ? "primary.main" : "custom.borderLight",
                 color: webSearch ? "primary.main" : "text.secondary",
@@ -339,7 +341,9 @@ export const ChatInput = ({
               }}
             >
               <LanguageOutlinedIcon sx={{ fontSize: 15 }} />
-              Web search
+              <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                Web search
+              </Box>
             </Box>
           </Stack>
 
