@@ -55,6 +55,19 @@ export default function ChatPage() {
   const [planName, setPlanName] = useState<string | undefined>(undefined);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
+  // On mobile, start with sidebar hidden
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 900;
+      setIsMobile(mobile);
+      if (mobile) setCollapsed(true);
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const userInitials = user?.name
     ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
@@ -269,16 +282,43 @@ export default function ChatPage() {
       display: "flex",
       overflow: "hidden",
       bgcolor: "background.default",
+      position: "relative",
     }}>
-      <ChatSidebar
-        chats={chats}
-        activeChatId={activeChatId ?? undefined}
-        onNewChat={handleNewChat}
-        onSelectChat={handleSelectChat}
-        onDeleteChat={handleDeleteChat}
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed((v) => !v)}
-      />
+      {/* Backdrop: mobile only, shown when sidebar is expanded */}
+      {isMobile && !collapsed && (
+        <Box
+          onClick={() => setCollapsed(true)}
+          sx={{
+            position: "fixed",
+            inset: 0,
+            bgcolor: "rgba(0,0,0,0.4)",
+            zIndex: 9,
+          }}
+        />
+      )}
+
+      {/* Sidebar: always in flex flow so collapsed strip stays visible.
+          On mobile when expanded, it becomes fixed overlay so content isn't squeezed. */}
+      <Box sx={{
+        // When mobile + expanded: take it out of flow as fixed overlay
+        position: (isMobile && !collapsed) ? "fixed" : "relative",
+        top: (isMobile && !collapsed) ? 0 : "auto",
+        left: (isMobile && !collapsed) ? 0 : "auto",
+        height: (isMobile && !collapsed) ? "100vh" : "auto",
+        zIndex: (isMobile && !collapsed) ? 10 : "auto",
+        flexShrink: 0,
+        transition: "none",
+      }}>
+        <ChatSidebar
+          chats={chats}
+          activeChatId={activeChatId ?? undefined}
+          onNewChat={handleNewChat}
+          onSelectChat={handleSelectChat}
+          onDeleteChat={handleDeleteChat}
+          collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed((v) => !v)}
+        />
+      </Box>
 
       <Box sx={{
         flex: 1, minWidth: 0,
