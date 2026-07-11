@@ -205,11 +205,11 @@ export default function UsersPage() {
       </Typography>
       <Divider sx={{ mb: 3 }} />
 
-      <TableContainer component={Paper} variant="outlined">
-        <Table sx={{ tableLayout: "fixed" }}>
+      <TableContainer component={Paper} variant="outlined" sx={{ overflowX: "auto" }}>
+        <Table sx={{ tableLayout: "auto", minWidth: 600 }}>
           <TableHead>
             <TableRow sx={{ bgcolor: "action.hover" }}>
-              <TableCell sx={{ fontWeight: 600, width: "15%" }}>
+              <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>
                 <TableSortLabel
                   active={sortBy === "name"}
                   direction={sortBy === "name" ? sortOrder : "asc"}
@@ -217,7 +217,7 @@ export default function UsersPage() {
                   Nama
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, width: "18%" }}>
+              <TableCell sx={{ fontWeight: 600, minWidth: 150 }}>
                 <TableSortLabel
                   active={sortBy === "email"}
                   direction={sortBy === "email" ? sortOrder : "asc"}
@@ -227,7 +227,7 @@ export default function UsersPage() {
               </TableCell>
               {/* <TableCell sx={{ fontWeight: 600, width: "12%" }}>Role</TableCell> */}
               {/* <TableCell sx={{ fontWeight: 600, width: "13%" }}>Plan</TableCell> */}
-              <TableCell sx={{ fontWeight: 600, width: "12%" }}>
+              <TableCell sx={{ fontWeight: 600, minWidth: 110 }}>
                 <TableSortLabel
                   active={sortBy === "created_at"}
                   direction={sortBy === "created_at" ? sortOrder : "asc"}
@@ -235,9 +235,9 @@ export default function UsersPage() {
                   Terdaftar
                 </TableSortLabel>
               </TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600, width: "15%" }}>Status</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600, width: "15%" }}>Aksi</TableCell>
-              <TableCell sx={{ fontWeight: 600, width: "14%" }}>
+              <TableCell align="center" sx={{ fontWeight: 600, minWidth: 140 }}>Status</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, minWidth: 60 }}>Aksi</TableCell>
+              <TableCell sx={{ fontWeight: 600, minWidth: 120 }}>
                 <TableSortLabel
                   active={sortBy === "last_usage_at"}
                   direction={sortBy === "last_usage_at" ? sortOrder : "asc"}
@@ -257,12 +257,12 @@ export default function UsersPage() {
             ) : (
               users.map((user) => (
                 <TableRow key={user.id} sx={{ "&:last-child td": { border: 0 } }}>
-                  <TableCell sx={{ width: "15%" }}>
+                  <TableCell>
                     <Typography variant="body2" sx={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {user.name}
                     </Typography>
                   </TableCell>
-                  <TableCell sx={{ width: "18%" }}>
+                  <TableCell>
                     <Typography variant="body2" color="text.secondary" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {user.email}
                     </Typography>
@@ -287,12 +287,12 @@ export default function UsersPage() {
                         sx={{ bgcolor: "rgba(0,0,0,0.08)", color: "text.secondary", fontWeight: 600, fontSize: "12px" }} />
                     )}
                   </TableCell> */}
-                  <TableCell sx={{ width: "12%" }}>
+                  <TableCell>
                     <Typography variant="body2" color="text.secondary">
                       {formatDate(user.created_at)}
                     </Typography>
                   </TableCell>
-                  <TableCell align="center" sx={{ width: "15%" }}>
+                  <TableCell align="center">
                     <Stack direction="row" sx={{ alignItems: "center", justifyContent: "center" }} spacing={1}>
                       <Box sx={{ width: 70, textAlign: "center" }}>
                         <Chip
@@ -316,14 +316,14 @@ export default function UsersPage() {
                       </Tooltip>
                     </Stack>
                   </TableCell>
-                  <TableCell align="center" sx={{ width: "15%" }}>
+                  <TableCell align="center">
                     <Tooltip title="Riwayat & atur plan">
                       <IconButton size="small" onClick={() => handleOpenHistory(user)}>
                         <HistoryOutlinedIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
-                  <TableCell sx={{ width: "14%" }}>
+                  <TableCell>
                     {user.last_usage_at ? (
                       <>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>

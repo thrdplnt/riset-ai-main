@@ -253,15 +253,33 @@ export default function ModelManagementPage() {
       <Divider sx={{ mb: 3 }} />
 
       {/* Action buttons */}
-      <Stack direction="row" spacing={1.5} sx={{ mb: 3, alignItems: "center" }}>
-        <Button variant="outlined" size="small" startIcon={<TuneOutlinedIcon />}
-          onClick={loadAvailable} sx={{ borderRadius: "8px" }}>
-          Dari Preset
-        </Button>
-        <Button variant="outlined" size="small" startIcon={<AddOutlinedIcon />}
-          onClick={handleAddManual} sx={{ borderRadius: "8px" }}>
-          Manual
-        </Button>
+      <Stack direction="row" spacing={1} sx={{ mb: 3, alignItems: "center" }}>
+        <Tooltip title="Dari Preset">
+          <Button variant="outlined" size="small"
+            startIcon={<TuneOutlinedIcon />}
+            onClick={loadAvailable}
+            sx={{
+              borderRadius: "8px",
+              minWidth: { xs: 36, sm: "auto" },
+              px: { xs: 1, sm: 1.5 },
+              "& .MuiButton-startIcon": { mr: { xs: 0, sm: 0.5 } },
+            }}>
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>Dari Preset</Box>
+          </Button>
+        </Tooltip>
+        <Tooltip title="Manual">
+          <Button variant="outlined" size="small"
+            startIcon={<AddOutlinedIcon />}
+            onClick={handleAddManual}
+            sx={{
+              borderRadius: "8px",
+              minWidth: { xs: 36, sm: "auto" },
+              px: { xs: 1, sm: 1.5 },
+              "& .MuiButton-startIcon": { mr: { xs: 0, sm: 0.5 } },
+            }}>
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>Manual</Box>
+          </Button>
+        </Tooltip>
         <Box sx={{ flex: 1 }} />
         {saveMsg && (
           <Typography variant="body2"
@@ -270,14 +288,16 @@ export default function ModelManagementPage() {
           </Typography>
         )}
         <Button variant="contained" size="small" startIcon={<SaveOutlinedIcon />}
-          onClick={handleSave} disabled={saving} sx={{ borderRadius: "8px" }}>
+          onClick={handleSave} disabled={saving}
+          sx={{ borderRadius: "8px", whiteSpace: "nowrap" }}>
           {saving ? "Menyimpan..." : "Simpan Konfigurasi"}
         </Button>
       </Stack>
 
       {/* Token Limit */}
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+        <Stack direction={{ xs: "column", sm: "row" }}
+          sx={{ justifyContent: "space-between", alignItems: { xs: "flex-start", sm: "flex-start" }, mb: 2, gap: 1.5 }}>
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
               Batas Token per Pengguna
@@ -286,10 +306,10 @@ export default function ModelManagementPage() {
               Total akumulasi token input &amp; output
             </Typography>
           </Box>
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexShrink: 0 }}>
             <TextField size="small" type="number" value={tokenLimit}
               onChange={(e) => setTokenLimit(Number(e.target.value))}
-              slotProps={{ htmlInput: { min: 0 } }} sx={{ width: 140 }} />
+              slotProps={{ htmlInput: { min: 0 } }} sx={{ width: 120 }} />
             <Typography variant="body2" color="text.secondary">tokens</Typography>
             <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 32 }}>
               {formatTokenLimit(tokenLimit)}
