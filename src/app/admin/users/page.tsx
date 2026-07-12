@@ -2,13 +2,29 @@
 
 import {
   Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogTitle, Divider, FormControl, IconButton, MenuItem,
+  DialogTitle, Divider, FormControl, IconButton, LinearProgress, MenuItem,
   Paper, Select, Stack, Switch, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow,
   Tooltip, Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+const DatabaseIcon = ({ size = 16 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+  </svg>
+);
 import { TableSortLabel } from "@mui/material";
 
 function getToken() {
@@ -23,6 +39,33 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString("id-ID", {
     day: "numeric", month: "short", year: "numeric",
   });
+}
+
+function formatDateLong(date: string) {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "long", day: "numeric", year: "numeric",
+  });
+}
+
+function formatDateTime(date: string) {
+  return {
+    date: new Date(date).toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric",
+    }),
+    time: new Date(date).toLocaleTimeString("en-US", {
+      hour: "2-digit", minute: "2-digit",
+    }),
+  };
+}
+
+function formatToken(n: number | null) {
+  if (n === null) return "-";
+  return n.toLocaleString("en-US");
+}
+
+function percentLeft(remaining: number | null, total: number | null) {
+  if (remaining === null || total === null || total === 0) return 0;
+  return Math.floor((remaining / total) * 100);
 }
 
 interface User {
@@ -56,6 +99,20 @@ interface SubscriptionHistory {
   limit_snapshot: number;
 }
 
+interface TokenData {
+  model_id: string;
+  display_name: string;
+  remaining_quota: number | null;
+  total_quota: number | null;
+}
+
+interface PlanData {
+  name: string;
+  expires: string;
+}
+
+
+
 function timeAgo(dateStr: string | null) {
   if (!dateStr) return null;
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -83,7 +140,13 @@ export default function UsersPage() {
   const [sortBy, setSortBy] = useState<"name" | "email" | "created_at" | "last_usage_at">("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  
+  // Token usage dialog state
+  const [tokenUsageOpen, setTokenUsageOpen] = useState(false);
+  const [tokenUsageUser, setTokenUsageUser] = useState<User | null>(null);
+  const [tokenUsagePlan, setTokenUsagePlan] = useState<PlanData | null>(null);
+  const [tokenUsageTokens, setTokenUsageTokens] = useState<TokenData[]>([]);
+
+  const [loadingTokenUsage, setLoadingTokenUsage] = useState(false);
 
   const getHeaders = () => ({
     "Content-Type": "application/json",
@@ -91,7 +154,7 @@ export default function UsersPage() {
   });
 
   const fetchUsers = () => {
-  const params = new URLSearchParams({ sortBy, sortOrder });
+    const params = new URLSearchParams({ sortBy, sortOrder });
     fetch(`/api/admin/users?${params}`, { headers: getHeaders() })
       .then((r) => r.json())
       .then((data) => {
@@ -109,7 +172,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy, sortOrder]);
 
   useEffect(() => {
@@ -148,6 +211,26 @@ export default function UsersPage() {
       if (data.success) setHistory(data.data);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const handleOpenTokenUsage = async (user: User) => {
+    setTokenUsageUser(user);
+    setTokenUsageOpen(true);
+    setLoadingTokenUsage(true);
+    setTokenUsagePlan(null);
+    setTokenUsageTokens([]);
+    try {
+      const res = await fetch(`/api/admin/users/token-usage?user_id=${user.id}`, {
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTokenUsagePlan(data.data.plan);
+        setTokenUsageTokens(data.data.tokens);
+      }
+    } finally {
+      setLoadingTokenUsage(false);
     }
   };
 
@@ -206,7 +289,7 @@ export default function UsersPage() {
       <Divider sx={{ mb: 3 }} />
 
       <TableContainer component={Paper} variant="outlined" sx={{ overflowX: "auto" }}>
-        <Table sx={{ tableLayout: "auto", minWidth: 600 }}>
+        <Table sx={{ tableLayout: "auto", minWidth: 800 }}>
           <TableHead>
             <TableRow sx={{ bgcolor: "action.hover" }}>
               <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>
@@ -225,8 +308,6 @@ export default function UsersPage() {
                   Email
                 </TableSortLabel>
               </TableCell>
-              {/* <TableCell sx={{ fontWeight: 600, width: "12%" }}>Role</TableCell> */}
-              {/* <TableCell sx={{ fontWeight: 600, width: "13%" }}>Plan</TableCell> */}
               <TableCell sx={{ fontWeight: 600, minWidth: 110 }}>
                 <TableSortLabel
                   active={sortBy === "created_at"}
@@ -245,12 +326,13 @@ export default function UsersPage() {
                   Last Usage
                 </TableSortLabel>
               </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, minWidth: 110 }}>Token Usage</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>
                   Tidak ada pengguna
                 </TableCell>
               </TableRow>
@@ -267,26 +349,6 @@ export default function UsersPage() {
                       {user.email}
                     </Typography>
                   </TableCell>
-                  {/* <TableCell sx={{ width: "12%" }}>
-                    <FormControl size="small" fullWidth>
-                      <Select
-                        value={user.role}
-                        onChange={(e) => handleChangeRole(user, e.target.value as "user" | "admin")}
-                        sx={{ fontSize: 13 }}>
-                        <MenuItem value="user">User</MenuItem>
-                        <MenuItem value="admin">Admin</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </TableCell>
-                  <TableCell sx={{ width: "13%" }}>
-                    {user.current_plan ? (
-                      <Chip label={user.current_plan} size="small"
-                        sx={{ bgcolor: "rgba(33,150,243,0.12)", color: "info.main", fontWeight: 600, fontSize: "12px" }} />
-                    ) : (
-                      <Chip label="Free" size="small"
-                        sx={{ bgcolor: "rgba(0,0,0,0.08)", color: "text.secondary", fontWeight: 600, fontSize: "12px" }} />
-                    )}
-                  </TableCell> */}
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
                       {formatDate(user.created_at)}
@@ -338,6 +400,13 @@ export default function UsersPage() {
                         Belum pernah
                       </Typography>
                     )}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="Lihat token usage">
+                      <IconButton size="small" onClick={() => handleOpenTokenUsage(user)}>
+                        <DatabaseIcon size={18} />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))
@@ -432,6 +501,8 @@ export default function UsersPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Dialog Confirm Assign */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>
           Konfirmasi ganti plan
@@ -453,7 +524,116 @@ export default function UsersPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Dialog Token Usage */}
+      <Dialog
+        open={tokenUsageOpen}
+        onClose={() => setTokenUsageOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{ paper: { sx: { maxHeight: "85vh" } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          Token Usage — {tokenUsageUser?.name}
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          {loadingTokenUsage ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : (
+            <Stack spacing={0}>
+              {/* Plan info */}
+              <Box sx={{ px: 2.5, pt: 2, pb: 1.5 }}>
+                <Paper variant="outlined" sx={{ p: 1.75, bgcolor: "action.hover" }}>
+                  <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Plan</Typography>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {tokenUsagePlan ? tokenUsagePlan.name : "Tidak ada langganan aktif"}
+                      </Typography>
+                    </Box>
+                    {tokenUsagePlan && (
+                      <Typography variant="body2" color="text.secondary">
+                        Expires {formatDateLong(tokenUsagePlan.expires)}
+                      </Typography>
+                    )}
+                  </Stack>
+                </Paper>
+              </Box>
+
+              <Divider />
+
+              {/* Token Quota per Model */}
+              <Box sx={{ px: 2.5, pt: 2, pb: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
+                  Token Quota per Model
+                </Typography>
+                <Paper variant="outlined">
+                  {tokenUsageTokens.length === 0 ? (
+                    <Box sx={{ px: 2.5, py: 3, textAlign: "center" }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Tidak ada data token
+                      </Typography>
+                    </Box>
+                  ) : (
+                    tokenUsageTokens.map((item, index) => (
+                      <Box key={item.model_id}>
+                        <Box sx={{ px: 2.5, py: 2 }}>
+                          <Stack direction="row" sx={{
+                            justifyContent: "space-between",
+                            alignItems: "center", mb: 1,
+                          }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {item.display_name}
+                            </Typography>
+                            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                              <Box sx={{ color: "text.secondary", display: "flex", alignItems: "center" }}><DatabaseIcon size={14} /></Box>
+                              <Typography variant="body2" color="text.secondary">
+                                {formatToken(
+                                  item.total_quota !== null && item.remaining_quota !== null
+                                    ? item.total_quota - item.remaining_quota
+                                    : null
+                                )} / {formatToken(item.total_quota)} tokens used
+                              </Typography>
+                            </Stack>
+                          </Stack>
+
+                          <LinearProgress
+                            variant="determinate"
+                            value={100 - percentLeft(item.remaining_quota, item.total_quota)}
+                            sx={{
+                              height: 6, borderRadius: "100px",
+                              bgcolor: "rgba(0,0,0,0.08)", mb: 0.75,
+                              "& .MuiLinearProgress-bar": {
+                                borderRadius: "100px",
+                                bgcolor: (100 - percentLeft(item.remaining_quota, item.total_quota)) > 80
+                                  ? "error.main"
+                                  : "primary.main",
+                              },
+                            }}
+                          />
+
+                          <Typography variant="caption" color="text.secondary">
+                            {100 - percentLeft(item.remaining_quota, item.total_quota)}% used
+                          </Typography>
+                        </Box>
+                        {index < tokenUsageTokens.length - 1 && <Divider />}
+                      </Box>
+                    ))
+                  )}
+                </Paper>
+              </Box>
+
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setTokenUsageOpen(false)} sx={{ borderRadius: "8px" }}>
+            Tutup
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
-    
   );
 }
