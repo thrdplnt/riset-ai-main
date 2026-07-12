@@ -13,7 +13,7 @@ import { Typography } from "@mui/material";
 
 interface MessageAttachment {
   name: string;
-  type: "image" | "pdf";
+  type: "image" | "pdf" | "docx" | "xlsx";
   mime_type: string;
   url: string;
 }

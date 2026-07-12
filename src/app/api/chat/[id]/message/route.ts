@@ -7,6 +7,8 @@ import { deductTokens } from "@/quota/deduct";
 import { getModelConfig, callLLM } from "@/providers";
 import { extractBase64 } from "@/providers/types";
 import { extractPdfText } from "@/utils/pdfExtract";
+import { extractDocxText } from "@/utils/docxExtract";
+import { extractXlsxText } from "@/utils/xlsxExtract";
 import { ApiResponse } from "@/utils/types";
 
 function getToken(req: NextRequest): string | null {
@@ -73,6 +75,25 @@ export async function POST(
     let llmAttachments: Attachment[] = attachments ?? [];
 
     if (attachments && attachments.length > 0) {
+      const docxAttachments = attachments.filter((a) => a.type === "docx");
+      const xlsxAttachments = attachments.filter((a) => a.type === "xlsx");
+      const extractedTexts: string[] = [];
+
+      for (const docx of docxAttachments) {
+        const base64 = extractBase64(docx.url);
+        const text = await extractDocxText(base64);
+        extractedTexts.push(`\n\n[Isi dokumen "${docx.name}"]:\n${text}`);
+      }
+
+      for (const xlsx of xlsxAttachments) {
+        const base64 = extractBase64(xlsx.url);
+        const text = await extractXlsxText(base64);
+        extractedTexts.push(`\n\n[Isi spreadsheet "${xlsx.name}"]:\n${text}`);
+      }
+
+      if (extractedTexts.length > 0) {
+        effectivePrompt = `${effectivePrompt}${extractedTexts.join("")}`;
+      }
       if (modelConfig.provider_id === "openai") {
         const pdfAttachments = attachments.filter((a) => a.type === "pdf");
         const imageAttachments = attachments.filter((a) => a.type === "image");
