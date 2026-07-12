@@ -1,4 +1,7 @@
+import { getPath } from "pdf-parse/worker";
 import { PDFParse } from "pdf-parse";
+
+PDFParse.setWorker(getPath());
 
 export async function extractPdfText(base64Data: string): Promise<string> {
   try {
