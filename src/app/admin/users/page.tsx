@@ -317,7 +317,6 @@ export default function UsersPage() {
                 </TableSortLabel>
               </TableCell>
               <TableCell align="center" sx={{ fontWeight: 600, minWidth: 140 }}>Status</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600, minWidth: 60 }}>Aksi</TableCell>
               <TableCell sx={{ fontWeight: 600, minWidth: 120 }}>
                 <TableSortLabel
                   active={sortBy === "last_usage_at"}
@@ -326,13 +325,13 @@ export default function UsersPage() {
                   Last Usage
                 </TableSortLabel>
               </TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600, minWidth: 110 }}>Token Usage</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, minWidth: 100 }}>Aksi</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
                   Tidak ada pengguna
                 </TableCell>
               </TableRow>
@@ -378,13 +377,6 @@ export default function UsersPage() {
                       </Tooltip>
                     </Stack>
                   </TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="Riwayat & atur plan">
-                      <IconButton size="small" onClick={() => handleOpenHistory(user)}>
-                        <HistoryOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
                   <TableCell>
                     {user.last_usage_at ? (
                       <>
@@ -402,11 +394,18 @@ export default function UsersPage() {
                     )}
                   </TableCell>
                   <TableCell align="center">
-                    <Tooltip title="Lihat token usage">
-                      <IconButton size="small" onClick={() => handleOpenTokenUsage(user)}>
-                        <DatabaseIcon size={18} />
-                      </IconButton>
-                    </Tooltip>
+                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: "center" }}>
+                      <Tooltip title="Riwayat & atur plan">
+                        <IconButton size="small" onClick={() => handleOpenHistory(user)}>
+                          <HistoryOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Lihat token usage">
+                        <IconButton size="small" onClick={() => handleOpenTokenUsage(user)}>
+                          <DatabaseIcon size={18} />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))
