@@ -8,6 +8,9 @@ import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import TableChartOutlinedIcon from "@mui/icons-material/TableChartOutlined";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -18,7 +21,7 @@ import "katex/dist/katex.min.css";
 
 interface MessageAttachment {
   name: string;
-  type: "image" | "pdf";
+  type: "image" | "pdf" | "docx" | "xlsx";
   mime_type: string;
   url: string;
 }
@@ -43,6 +46,12 @@ const ALERT_CONFIG: Record<string, { icon: React.ElementType; color: string; bg:
   IMPORTANT: { icon: AutoAwesomeOutlinedIcon, color: "#7c3aed", bg: "rgba(124,58,237,0.06)" },
   WARNING: { icon: WarningAmberOutlinedIcon, color: "#d97706", bg: "rgba(217,119,6,0.06)" },
   CAUTION: { icon: ErrorOutlineOutlinedIcon, color: "#dc2626", bg: "rgba(220,38,38,0.06)" },
+};
+
+const FILE_ICON_CONFIG: Record<Exclude<MessageAttachment["type"], "image">, { icon: React.ElementType; color: string }> = {
+  pdf: { icon: PictureAsPdfOutlinedIcon, color: "#dc2626" },
+  docx: { icon: DescriptionOutlinedIcon, color: "#2563eb" },
+  xlsx: { icon: TableChartOutlinedIcon, color: "#16a34a" },
 };
 
 const extractText = (node: any): string => {
@@ -200,22 +209,31 @@ const AttachmentPreview = ({ attachments, isUser }: { attachments?: MessageAttac
 
   return (
     <Stack direction="row" sx={{ gap: 1, flexWrap: "wrap", mb: 1 }}>
-      {safeAttachments.map((att, i) => (
-        att.type === "image" ? (
-          <Box
-            key={i}
-            component="img"
-            src={att.url}
-            alt={att.name}
-            sx={{
-              width: 140, height: 140,
-              borderRadius: "10px",
-              objectFit: "cover",
-              border: "1px solid",
-              borderColor: isUser ? "rgba(255,255,255,0.2)" : "custom.borderLight",
-            }}
-          />
-        ) : (
+      {safeAttachments.map((att, i) => {
+        if (att.type === "image") {
+          return (
+            <Box
+              key={i}
+              component="img"
+              src={att.url}
+              alt={att.name}
+              sx={{
+                width: 140, height: 140,
+                borderRadius: "10px",
+                objectFit: "cover",
+                border: "1px solid",
+                borderColor: "custom.borderLight",
+              }}
+            />
+          );
+        }
+
+        const { icon: FileIcon, color: iconColor } = FILE_ICON_CONFIG[att.type] ?? {
+          icon: InsertDriveFileOutlinedIcon,
+          color: "inherit",
+        };
+
+        return (
           <Stack
             key={i}
             direction="row"
@@ -223,26 +241,23 @@ const AttachmentPreview = ({ attachments, isUser }: { attachments?: MessageAttac
               alignItems: "center", gap: 1,
               px: 1.25, py: 1,
               borderRadius: "10px",
-              bgcolor: isUser ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.04)",
+              bgcolor: "#ffffff",
               border: "1px solid",
-              borderColor: isUser ? "rgba(255,255,255,0.2)" : "custom.borderLight",
+              borderColor: "custom.borderLight",
               maxWidth: 200,
             }}
           >
-            <InsertDriveFileOutlinedIcon sx={{
-              fontSize: 20,
-              color: isUser ? "custom.buttonText" : "text.secondary",
-            }} />
+            <FileIcon sx={{ fontSize: 20, color: iconColor }} />
             <Typography sx={{
               fontSize: "12.5px",
-              color: isUser ? "custom.buttonText" : "text.primary",
+              color: "text.primary",
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             }}>
               {att.name}
             </Typography>
           </Stack>
-        )
-      ))}
+        );
+      })}
     </Stack>
   );
 };

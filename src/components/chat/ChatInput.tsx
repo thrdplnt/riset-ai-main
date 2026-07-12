@@ -5,6 +5,9 @@ import AddIcon from "@mui/icons-material/Add";
 import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import TableChartOutlinedIcon from "@mui/icons-material/TableChartOutlined";
+import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import LanguageOutlinedIcon from "@mui/icons-material/LanguageOutlined";
 import {
   Box, CircularProgress, IconButton, Menu, MenuItem,
@@ -15,7 +18,7 @@ import { ModelSelector } from "./ModelSelector";
 
 export interface PendingAttachment {
   name: string;
-  type: "image" | "pdf";
+  type: "image" | "pdf" | "docx" | "xlsx";
   mime_type: string;
   url: string;
 }
@@ -33,7 +36,16 @@ interface ChatInputProps {
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp,application/pdf";
+const ACCEPTED_TYPES =
+  "image/png,image/jpeg,image/webp,application/pdf," +
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document," +
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+const FILE_ICON_CONFIG: Record<Exclude<PendingAttachment["type"], "image">, { icon: React.ElementType; color: string }> = {
+  pdf: { icon: PictureAsPdfOutlinedIcon, color: "#dc2626" },
+  docx: { icon: DescriptionOutlinedIcon, color: "#2563eb" },
+  xlsx: { icon: TableChartOutlinedIcon, color: "#16a34a" },
+};
 
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -60,6 +72,8 @@ export const ChatInput = ({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const dragCounterRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -106,16 +120,18 @@ export const ChatInput = ({
 
         const isImage = file.type.startsWith("image/");
         const isPdf = file.type === "application/pdf";
+        const isDocx = file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        const isXlsx = file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-        if (!isImage && !isPdf) {
+        if (!isImage && !isPdf && !isDocx && !isXlsx) {
           setError(`Tipe file tidak didukung`);
           continue;
         }
 
         const dataUrl = await fileToDataUrl(file);
         setAttachments((prev) => [...prev, {
-          name: file.name || `pasted-${isImage ? "image.png" : "file.pdf"}`,
-          type: isImage ? "image" : "pdf",
+          name: file.name || `pasted-${isImage ? "image.png" : isPdf ? "file.pdf" : isDocx ? "file.docx" : "file.xlsx"}`,
+          type: isImage ? "image" : isPdf ? "pdf" : isDocx ? "docx" : "xlsx",
           mime_type: file.type,
           url: dataUrl,
         }]);
@@ -145,6 +161,52 @@ export const ChatInput = ({
     const files = fileItems
       .map((item) => item.getAsFile())
       .filter((f): f is File => f !== null);
+
+    await addFiles(files);
+  };
+
+  // Drag-and-drop: menyeret file dari luar browser lalu melepasnya ke kolom chat.
+  // Menggunakan counter (bukan boolean langsung) karena onDragEnter/onDragLeave
+  // ikut terpicu setiap kali kursor melewati elemen anak di dalam Paper ini,
+  // sehingga boolean sederhana akan salah menganggap "keluar" saat sebenarnya
+  // masih di dalam area drop tapi berpindah ke elemen anak yang berbeda.
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (disabled) return;
+    dragCounterRef.current += 1;
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDraggingOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    // Wajib di-preventDefault, atau browser akan menolak event onDrop
+    // dan malah membuka file itu sendiri di tab baru.
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDraggingOver(false);
+
+    if (disabled) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
 
     await addFiles(files);
   };
@@ -179,16 +241,43 @@ export const ChatInput = ({
   const canSend = (value.trim().length > 0 || attachments.length > 0) && !loading && !disabled;
 
   return (
-    <Paper elevation={0} sx={{
-      borderRadius: "20px",
-      border: "1px solid",
-      borderColor: "custom.borderLight",
-      boxShadow: "0px 2px 20px rgba(0,0,0,0.07)",
-      bgcolor: "background.paper",
-      px: 1, pt: 1.5, pb: 1,
-      width: "100%",
-      opacity: disabled ? 0.7 : 1,
-    }}>
+    <Paper
+      elevation={0}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      sx={{
+        borderRadius: "20px",
+        border: "1px solid",
+        borderColor: isDraggingOver ? "primary.main" : "custom.borderLight",
+        boxShadow: isDraggingOver
+          ? "0px 2px 20px rgba(33,150,243,0.15)"
+          : "0px 2px 20px rgba(0,0,0,0.07)",
+        bgcolor: isDraggingOver ? "rgba(33,150,243,0.04)" : "background.paper",
+        px: 1, pt: 1.5, pb: 1,
+        width: "100%",
+        opacity: disabled ? 0.7 : 1,
+        transition: "border-color 0.15s, background-color 0.15s, box-shadow 0.15s",
+        position: "relative",
+      }}
+    >
+      {isDraggingOver && (
+        <Box sx={{
+          position: "absolute", inset: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          borderRadius: "20px",
+          bgcolor: "rgba(33,150,243,0.06)",
+          border: "2px dashed",
+          borderColor: "primary.main",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}>
+          <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "primary.main" }}>
+            Lepaskan file di sini untuk melampirkan
+          </Typography>
+        </Box>
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -201,34 +290,39 @@ export const ChatInput = ({
       <Stack sx={{ gap: 1.5 }}>
         {attachments.length > 0 && (
           <Stack direction="row" sx={{ gap: 1, px: 0.75, flexWrap: "wrap" }}>
-            {attachments.map((att, i) => (
-              <Box key={i} sx={{
-                position: "relative",
-                display: "flex", alignItems: "center", gap: 0.75,
-                px: 1, py: 0.5, borderRadius: "8px",
-                bgcolor: "action.hover",
-                border: "1px solid", borderColor: "custom.borderLight",
-                maxWidth: 180,
-              }}>
-                {att.type === "image" ? (
-                  <Box component="img" src={att.url} alt={att.name}
-                    sx={{ width: 24, height: 24, borderRadius: "4px", objectFit: "cover" }} />
-                ) : (
-                  <InsertDriveFileOutlinedIcon sx={{ fontSize: 18, color: "text.secondary" }} />
-                )}
-                <Typography sx={{
-                  fontSize: "12px", color: "text.primary",
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            {attachments.map((att, i) => {
+              const fileIconConfig = att.type !== "image" ? FILE_ICON_CONFIG[att.type] : null;
+              const FileIcon = fileIconConfig?.icon ?? InsertDriveFileOutlinedIcon;
+
+              return (
+                <Box key={i} sx={{
+                  position: "relative",
+                  display: "flex", alignItems: "center", gap: 0.75,
+                  px: 1, py: 0.5, borderRadius: "8px",
+                  bgcolor: "action.hover",
+                  border: "1px solid", borderColor: "custom.borderLight",
+                  maxWidth: 180,
                 }}>
-                  {att.name}
-                </Typography>
-                <IconButton size="small" onClick={() => handleRemoveAttachment(i)}
-                  sx={{ width: 18, height: 18, border: "none", ml: "auto",
-                    "&:hover": { bgcolor: "rgba(0,0,0,0.08)" } }}>
-                  <CloseIcon sx={{ fontSize: 12 }} />
-                </IconButton>
-              </Box>
-            ))}
+                  {att.type === "image" ? (
+                    <Box component="img" src={att.url} alt={att.name}
+                      sx={{ width: 24, height: 24, borderRadius: "4px", objectFit: "cover" }} />
+                  ) : (
+                    <FileIcon sx={{ fontSize: 18, color: fileIconConfig?.color ?? "text.secondary" }} />
+                  )}
+                  <Typography sx={{
+                    fontSize: "12px", color: "text.primary",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {att.name}
+                  </Typography>
+                  <IconButton size="small" onClick={() => handleRemoveAttachment(i)}
+                    sx={{ width: 18, height: 18, border: "none", ml: "auto",
+                      "&:hover": { bgcolor: "rgba(0,0,0,0.08)" } }}>
+                    <CloseIcon sx={{ fontSize: 12 }} />
+                  </IconButton>
+                </Box>
+              );
+            })}
           </Stack>
         )}
 
@@ -325,7 +419,9 @@ export const ChatInput = ({
               disabled={!supportsWebSearch || disabled}
               sx={{
                 display: "flex", alignItems: "center", gap: 0.625,
-                height: 30, px: 1.5, borderRadius: "100px",
+                height: 30,
+                px: { xs: 0.75, sm: 1.5 },
+                borderRadius: "100px",
                 border: "1px solid",
                 borderColor: webSearch ? "primary.main" : "custom.borderLight",
                 color: webSearch ? "primary.main" : "text.secondary",
@@ -339,7 +435,9 @@ export const ChatInput = ({
               }}
             >
               <LanguageOutlinedIcon sx={{ fontSize: 15 }} />
-              Web search
+              <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                Web search
+              </Box>
             </Box>
           </Stack>
 

@@ -74,15 +74,27 @@ export const TokenBadge = ({
           "&:hover": { bgcolor: "action.hover" },
         }}
       >
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+        {/* Model name + divider: desktop only */}
+        <Typography variant="body2" color="text.secondary" sx={{
+          fontWeight: 500,
+          whiteSpace: "nowrap",
+          display: { xs: "none", sm: "block" },
+        }}>
           {modelName || "—"}
         </Typography>
         <Box sx={{
           width: "1px", height: 12,
           bgcolor: "custom.borderLight",
+          flexShrink: 0,
+          display: { xs: "none", sm: "block" },
         }} />
+
+        {/* Token: always visible */}
         <DatabaseIcon size={14} />
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+        <Typography variant="body2" color="text.secondary" sx={{
+          fontWeight: 500,
+          whiteSpace: "nowrap",
+        }}>
           {remaining !== null ? `${remaining.toLocaleString("en-US")} Token` : "— Token"}
         </Typography>
       </Box>

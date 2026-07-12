@@ -2,7 +2,7 @@
 
 import CheckIcon from "@mui/icons-material/Check";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { Box, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Menu, MenuItem, Stack, Typography } from "@mui/material";
 import { MouseEvent, useEffect, useState } from "react";
 
 interface ModelOption {
@@ -33,7 +33,6 @@ export const ModelSelector = ({
       .then((data) => {
         if (data.success && data.data) {
           setModels(data.data);
-          // Tidak auto-select — user harus pilih sendiri
         }
       })
       .catch(() => {});
@@ -57,26 +56,41 @@ export const ModelSelector = ({
 
   return (
     <>
-        <Box
-          component="button"
-          onClick={handleOpen}
-          sx={{
-            display: "flex", alignItems: "center", gap: 0.75,
-            height: 30, px: 1.5, borderRadius: "100px",
-            border: "1px solid",
-            borderColor: "custom.borderLight",
-            bgcolor: open ? "action.hover" : "transparent",
-            cursor: "pointer",
-            fontWeight: 500, fontSize: "13px",
-            fontFamily: 'var(--font-inter), Helvetica, sans-serif',
-            color: "text.secondary",
-            transition: "background 0.15s",
-            "&:hover": { bgcolor: "action.hover" },
-          }}
-        >
+      <Box
+        component="button"
+        onClick={handleOpen}
+        sx={{
+          display: "flex", alignItems: "center", gap: 0.75,
+          height: 30,
+          px: { xs: 1, sm: 1.5 },
+          borderRadius: "100px",
+          border: "1px solid",
+          borderColor: "custom.borderLight",
+          bgcolor: open ? "action.hover" : "transparent",
+          cursor: "pointer",
+          fontWeight: 500, fontSize: "13px",
+          fontFamily: 'var(--font-inter), Helvetica, sans-serif',
+          color: "text.secondary",
+          transition: "background 0.15s",
+          "&:hover": { bgcolor: "action.hover" },
+          maxWidth: { xs: 110, sm: "none" },
+          overflow: "hidden",
+        }}
+      >
+        <Typography sx={{
+          fontSize: "13px",
+          fontWeight: 500,
+          fontFamily: 'var(--font-inter), Helvetica, sans-serif',
+          color: "text.secondary",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          maxWidth: { xs: 80, sm: 200 },
+        }}>
           {selected?.display_name ?? "Select model"}
-          <ExpandMoreIcon sx={{ fontSize: 16 }} />
-        </Box>
+        </Typography>
+        <ExpandMoreIcon sx={{ fontSize: 16, flexShrink: 0 }} />
+      </Box>
 
       <Menu
         anchorEl={anchorEl} open={open} onClose={handleClose}
@@ -116,7 +130,9 @@ export const ModelSelector = ({
               <Typography variant="body2" sx={{ flex: 1, fontWeight: 500, fontSize: "13px" }}>
                 {model.display_name}
               </Typography>
-              {model.id === value && <CheckIcon sx={{ fontSize: 14, color: "primary.main", ml: "auto" }} />}
+              {model.id === value && (
+                <CheckIcon sx={{ fontSize: 14, color: "primary.main", flexShrink: 0 }} />
+              )}
             </Stack>
           </MenuItem>
         ))}

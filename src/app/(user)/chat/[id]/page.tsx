@@ -11,7 +11,6 @@ import { TokenBadge } from "@/components/chat/TokenBadge";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/routes";
 
-// Interface sesuai MessageBubble baru — pakai object message
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -42,6 +41,18 @@ export default function ChatRoomPage() {
   const [isFree, setIsFree] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [limitError, setLimitError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 900;
+      setIsMobile(mobile);
+      if (mobile) setCollapsed(true);
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     fetch("/api/chat")
@@ -193,33 +204,84 @@ export default function ChatRoomPage() {
   };
 
   return (
-    <Box sx={{ height: "100vh", display: "flex", overflow: "hidden", bgcolor: "background.default" }}>
-      <ChatSidebar
-        chats={chats}
-        activeChatId={activeChatId}
-        onNewChat={handleNewChat}
-        onSelectChat={handleSelectChat}
-        onDeleteChat={handleDeleteChat}
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed((v) => !v)}
-      />
+    <Box sx={{ height: "100vh", display: "flex", overflow: "hidden", bgcolor: "background.default", position: "relative" }}>
+
+      {/* Mobile backdrop: tap to close sidebar */}
+      {isMobile && !collapsed && (
+        <Box
+          onClick={() => setCollapsed(true)}
+          sx={{
+            position: "fixed",
+            inset: 0,
+            bgcolor: "rgba(0,0,0,0.4)",
+            zIndex: 9,
+          }}
+        />
+      )}
+
+      {/* Sidebar: always in flex flow so collapsed strip stays visible.
+          On mobile when expanded, it becomes fixed overlay so content isn't squeezed. */}
+      <Box sx={{
+        position: (isMobile && !collapsed) ? "fixed" : "relative",
+        top: (isMobile && !collapsed) ? 0 : "auto",
+        left: (isMobile && !collapsed) ? 0 : "auto",
+        height: (isMobile && !collapsed) ? "100vh" : "auto",
+        zIndex: (isMobile && !collapsed) ? 10 : "auto",
+        flexShrink: 0,
+        transition: "none",
+      }}>
+        <ChatSidebar
+          chats={chats}
+          activeChatId={activeChatId}
+          onNewChat={handleNewChat}
+          onSelectChat={handleSelectChat}
+          onDeleteChat={handleDeleteChat}
+          collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed((v) => !v)}
+        />
+      </Box>
 
       <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column",
-        height: "100vh", overflow: "hidden" }}>
+        height: "100vh", overflow: "hidden", width: "100%" }}>
 
         <AppBar position="static" elevation={0}
           sx={{ bgcolor: "background.paper", borderBottom: "1px solid",
             borderColor: "divider", flexShrink: 0 }}>
           <Toolbar sx={{ minHeight: "56px !important", px: "16px !important",
-            justifyContent: "flex-end", gap: 1.5 }}>
-            <TokenBadge remaining={remaining} total={total} />
-            <Box sx={{ width: 32, height: 32, borderRadius: "50%",
-              bgcolor: "custom.buttonDark", display: "flex",
-              alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-              onClick={() => router.push(ROUTES.SETTINGS_ACCOUNT)}>
-              <Typography sx={{ color: "custom.buttonText", fontSize: "12px", fontWeight: 700 }}>
-                U
-              </Typography>
+            justifyContent: "space-between", gap: 1.5 }}>
+            {/* Hamburger for mobile */}
+            <Box
+              component="button"
+              onClick={() => setCollapsed(false)}
+              sx={{
+                display: { xs: "flex", md: "none" },
+                alignItems: "center",
+                justifyContent: "center",
+                width: 36,
+                height: 36,
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                borderRadius: "8px",
+                color: "text.primary",
+                p: 0,
+                "&:hover": { bgcolor: "action.hover" },
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75Zm0 5A.75.75 0 0 1 2.75 9h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 9.75Zm0 5A.75.75 0 0 1 2.75 14h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 14.75Z" />
+              </svg>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, ml: "auto" }}>
+              <TokenBadge remaining={remaining} total={total} />
+              <Box sx={{ width: 32, height: 32, borderRadius: "50%",
+                bgcolor: "custom.buttonDark", display: "flex",
+                alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                onClick={() => router.push(ROUTES.SETTINGS_ACCOUNT)}>
+                <Typography sx={{ color: "custom.buttonText", fontSize: "12px", fontWeight: 700 }}>
+                  U
+                </Typography>
+              </Box>
             </Box>
           </Toolbar>
         </AppBar>

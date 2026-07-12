@@ -1,11 +1,11 @@
+import { PDFParse } from "pdf-parse";
+
 export async function extractPdfText(base64Data: string): Promise<string> {
   try {
     const buffer = Buffer.from(base64Data, "base64");
-    
-    const pdfParseModule = await import('pdf-parse') as any;
-    const pdfParse = pdfParseModule.default ?? pdfParseModule;
-    const result = await pdfParse(buffer);
-    
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    await parser.destroy();
     return result.text.trim();
   } catch (error) {
     console.error("PDF extract error:", error);
