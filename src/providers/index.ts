@@ -40,12 +40,20 @@ export async function callLLM(
   let effectiveMaxOutput: number;
 
   if (remaining_quota !== undefined && input_tokens !== undefined) {
+    const minimumOutputBudget = Math.max(64, Math.min(512, Math.floor((config.max_output_tokens || 1024) / 4)));
+    const remainingForOutput = remaining_quota - input_tokens;
+
+    if (remainingForOutput < minimumOutputBudget) {
+      throw new Error(
+        `Saldo token tidak mencukupi untuk menghasilkan jawaban yang layak. Sisa saldo untuk jawaban ${remainingForOutput.toLocaleString()} token, batas minimum ${minimumOutputBudget.toLocaleString()} token.`
+      );
+    }
 
     effectiveMaxOutput = Math.max(
       Math.min(
         config.max_output_tokens,
         config.max_input_tokens - input_tokens,
-        remaining_quota - input_tokens
+        remainingForOutput
       ),
       0
     );
