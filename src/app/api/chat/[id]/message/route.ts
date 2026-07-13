@@ -179,6 +179,7 @@ export async function POST(
         prompt_text: savedLog.prompt_text,
         interacted_at: savedLog.interacted_at,
         model_id: savedLog.model_display_name ?? model_id,
+        estimated_input_tokens: quotaResult.input_tokens,
         input_tokens: llmResponse.input_tokens,
         output_tokens: llmResponse.output_tokens,
         remaining_quota: Math.max(
@@ -191,6 +192,7 @@ export async function POST(
       prompt_text: string;
       interacted_at: Date;
       model_id: string;
+      estimated_input_tokens: number;
       input_tokens: number;
       output_tokens: number;
       remaining_quota: number;

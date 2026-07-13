@@ -1,19 +1,48 @@
-function countOpenAITokens(
+async function countInputTokensOpenAI(
+  base_url: string,
+  model_name: string,
   prompt: string,
-  history: { role: string; content: string }[],
+  history: any[],
   system_prompt: string
-): number {
+): Promise<number> {
+  
+  const cleanHistory = history.map(h => ({
+    role: h.role,
+    content: h.content
+  }));
 
-  const allText = [
-    system_prompt,
-    ...history.map(h => h.content),
-    prompt
-  ].join(' ');
+  const input = [
+    ...cleanHistory,
+    { role: 'user', content: prompt }
+  ];
 
-  const messageCount = history.length + 2; 
-  const overhead = messageCount * 4 + 3;
+  const payload: any = {
+    model: model_name,
+    input: input,
+  };
 
-  return Math.ceil(allText.length / 3.5) + overhead;
+  if (system_prompt) {
+    payload.instructions = system_prompt;
+  }
+
+  const res = await fetch(`${base_url}/responses/input_tokens`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    console.error("Detail Error dari OpenAI:", JSON.stringify(errorData, null, 2));
+    
+    throw new Error(`OpenAI Error: ${errorData.error?.message || 'Bad Request'}`);
+  }
+
+  const data = await res.json();
+  return data.input_tokens ?? 0;
 }
 
 async function countInputTokensGemini(
@@ -115,7 +144,8 @@ export async function estimateTotalTokens(
     case 'openai':
     default:
       // input_tokens = fallbackEstimate(prompt, history, system_prompt);
-      input_tokens = countOpenAITokens(prompt, history, system_prompt);
+      input_tokens = await countInputTokensOpenAI(
+        base_url, model_name, prompt, history, system_prompt);
       break;
   }
 
