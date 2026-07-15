@@ -5,6 +5,8 @@ export interface Attachment {
   type: 'image' | 'pdf' | 'docx' | 'xlsx';
   mime_type: string;
   url: string;
+  width?: number;  
+  height?: number;
 }
 
 export interface LLMRequest {

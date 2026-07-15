@@ -1,6 +1,7 @@
 import { initTokenBalance } from './init';
 import { estimateTotalTokens } from './estimate';
 import { ModelConfig } from '@/providers/types';
+import { Attachment } from "@/providers/types";
 
 function getMinimumOutputBudget(config: ModelConfig): number {
   const maxOutput = config.max_output_tokens || 1024;
@@ -20,7 +21,8 @@ export async function checkQuota(
   prompt: string,
   history: { role: string; content: string }[],
   system_prompt: string,
-  config: ModelConfig
+  config: ModelConfig,
+  attachments: Attachment[] = []
 ): Promise<QuotaCheckResult> {
 
   const balance = await initTokenBalance(user_id, model_id);
@@ -36,7 +38,8 @@ export async function checkQuota(
     prompt,
     history,
     system_prompt,
-    balance.remaining_quota
+    balance.remaining_quota,
+    attachments
   );
 
   const minimumOutputBudget = getMinimumOutputBudget(config);

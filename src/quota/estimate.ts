@@ -1,3 +1,37 @@
+import { Attachment } from "@/providers/types";
+
+function calculateImageTokens(
+  provider_id: string,
+  width: number = 1024, 
+  height: number = 1024
+): number {
+  switch (provider_id) {
+    case 'openai':
+      // Asumsi mode "high detail": 85 base + (170 * jumlah tile 512x512)
+      const tilesX = Math.ceil(width / 512);
+      const tilesY = Math.ceil(height / 512);
+      return 85 + (170 * (tilesX * tilesY));
+
+    case 'claude':
+      // Berbasis Area: Blok 28x28
+      const blocksX = Math.ceil(width / 28);
+      const blocksY = Math.ceil(height / 28);
+      return blocksX * blocksY;
+
+    case 'gemini':
+      // Flat rate per tile
+      if (width <= 384 && height <= 384) {
+        return 258;
+      }
+      const geminiTilesX = Math.ceil(width / 768);
+      const geminiTilesY = Math.ceil(height / 768);
+      return 258 * (geminiTilesX * geminiTilesY);
+
+    default:
+      return 1000;
+  }
+}
+
 async function countInputTokensOpenAI(
   base_url: string,
   model_name: string,
@@ -126,7 +160,8 @@ export async function estimateTotalTokens(
   prompt: string,
   history: { role: string; content: string }[],
   system_prompt: string,
-  remaining_quota: number
+  remaining_quota: number,
+  attachments: Attachment[] = []
 ): Promise<number> {
   let input_tokens = 0;
 
@@ -149,5 +184,19 @@ export async function estimateTotalTokens(
       break;
   }
 
-  return input_tokens;
+  let image_tokens = 0;
+  const imageAttachments = attachments.filter(a => a.type === 'image');
+  
+  for (const img of imageAttachments) {
+    const w = img.width || 1024;
+    const h = img.height || 1024;
+    
+    image_tokens += calculateImageTokens(provider_id, w, h);
+  }
+
+  const total_estimated_tokens = input_tokens + image_tokens;
+
+  console.log(`[Estimasi Kuota] Teks: ${input_tokens} | Gambar: ${image_tokens} | Total: ${total_estimated_tokens}`);
+
+  return total_estimated_tokens;
 }

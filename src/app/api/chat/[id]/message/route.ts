@@ -77,6 +77,8 @@ export async function POST(
     if (attachments && attachments.length > 0) {
       const docxAttachments = attachments.filter((a) => a.type === "docx");
       const xlsxAttachments = attachments.filter((a) => a.type === "xlsx");
+      const pdfAttachments = attachments.filter((a) => a.type === "pdf");
+      const imageAttachments = attachments.filter((a) => a.type === "image");
       const extractedTexts: string[] = [];
 
       for (const docx of docxAttachments) {
@@ -91,24 +93,16 @@ export async function POST(
         extractedTexts.push(`\n\n[Isi spreadsheet "${xlsx.name}"]:\n${text}`);
       }
 
+      for (const pdf of pdfAttachments) {
+        const base64 = extractBase64(pdf.url);
+        const text = await extractPdfText(base64);
+        extractedTexts.push(`\n\n[Isi dokumen "${pdf.name}"]:\n${text}`);
+      }
+
       if (extractedTexts.length > 0) {
         effectivePrompt = `${effectivePrompt}${extractedTexts.join("")}`;
       }
-      if (modelConfig.provider_id === "openai") {
-        const pdfAttachments = attachments.filter((a) => a.type === "pdf");
-        const imageAttachments = attachments.filter((a) => a.type === "image");
-
-        if (pdfAttachments.length > 0) {
-          const pdfTexts: string[] = [];
-          for (const pdf of pdfAttachments) {
-            const base64 = extractBase64(pdf.url);
-            const text = await extractPdfText(base64);
-            pdfTexts.push(`\n\n[Isi dokumen "${pdf.name}"]:\n${text}`);
-          }
-          effectivePrompt = `${prompt}${pdfTexts.join("")}`;
-        }
-        llmAttachments = imageAttachments;
-      }
+      llmAttachments = imageAttachments;
     }
 
     let quotaResult;
@@ -119,7 +113,8 @@ export async function POST(
         effectivePrompt,
         history,
         SYSTEM_PROMPT,
-        modelConfig
+        modelConfig,
+        llmAttachments
       );
     } catch (err: any) {
       return NextResponse.json({
