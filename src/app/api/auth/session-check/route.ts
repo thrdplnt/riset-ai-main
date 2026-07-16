@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
 import { deviceSession } from "@/domain/DeviceSession";
+import { users } from "@/domain/users";
 import { ApiResponse } from "@/utils/types";
 
 export async function GET(req: NextRequest) {
@@ -24,9 +25,17 @@ export async function GET(req: NextRequest) {
 
     const session = await deviceSession.findByToken(token);
     if (!session) {
+      const user = await users.findById(payload.userId);
+      if (user && !user.is_active) {
+        return NextResponse.json({
+          success: false,
+          message: "Akun kamu telah dinonaktifkan. Hubungi admin untuk informasi lebih lanjut.",
+        } satisfies ApiResponse, { status: 401 });
+      }
+
       return NextResponse.json({
         success: false,
-        message: "Sesi sudah berakhir, kamu login di perangkat lain",
+        message: "Sesi berakhir: Batas login 2 perangkat telah terlampaui.",
       } satisfies ApiResponse, { status: 401 });
     }
 

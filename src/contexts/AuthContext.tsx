@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/auth/session-check");
       const data = await res.json();
       if (!data.success) {
-        forceLogout("Sesi berakhir: Batas login 2 perangkat telah terlampaui. ");
+        forceLogout(data.message || "Sesi berakhir. Silakan login kembali.");
       }
     } catch {
     }
