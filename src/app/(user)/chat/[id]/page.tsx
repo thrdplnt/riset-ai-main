@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { AppBar, Box, Stack, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Stack, Toolbar, Typography, Snackbar, Alert } from "@mui/material";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ChatInput } from "@/components/chat/ChatInput";
@@ -355,6 +355,17 @@ export default function ChatRoomPage() {
           )}
         </Box>
       </Box>
+
+      <Snackbar
+        open={Boolean(limitError)}
+        autoHideDuration={4000}
+        onClose={() => setLimitError(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity="warning" onClose={() => setLimitError(null)} sx={{ width: "100%" }}>
+          {limitError}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

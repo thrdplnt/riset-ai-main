@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AppBar, Box, Stack, Toolbar } from "@mui/material";
+import { AppBar, Box, Stack, Toolbar, Snackbar, Alert } from "@mui/material";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ChatInput, PendingAttachment } from "@/components/chat/ChatInput";
@@ -463,6 +463,17 @@ export default function ChatPage() {
           )}
         </Box>
       </Box>
+
+      <Snackbar
+        open={Boolean(limitError)}
+        autoHideDuration={4000}
+        onClose={() => setLimitError(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity="warning" onClose={() => setLimitError(null)} sx={{ width: "100%" }}>
+          {limitError}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

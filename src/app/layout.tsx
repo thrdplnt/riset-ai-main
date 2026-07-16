@@ -30,10 +30,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${poppins.variable} ${manrope.variable} ${inter.variable}`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+      </head>
       <body style={{ margin: 0 }}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <style>{`html, body { scrollbar-width: none; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }`}</style>
+          <style>{`html, body { scrollbar-width: none; overflow: hidden; height: 100%; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }`}</style>
           <AuthProvider>
             {children}
           </AuthProvider>
