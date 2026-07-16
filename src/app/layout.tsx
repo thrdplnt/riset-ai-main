@@ -36,7 +36,7 @@ export default function RootLayout({
       <body style={{ margin: 0 }}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <style>{`html, body { scrollbar-width: none; overflow: hidden; height: 100%; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }`}</style>
+          <style>{`html, body { scrollbar-width: none; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }`}</style>
           <AuthProvider>
             {children}
           </AuthProvider>
