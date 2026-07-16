@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
 import sql from "@/db/postgres";
 import { sendSubscriptionActivatedEmail } from "@/lib/mailer";
+import { deviceSession } from "@/domain/DeviceSession";
 import { ApiResponse } from "@/utils/types";
 
 function getToken(req: NextRequest): string | null {
@@ -101,6 +102,9 @@ export async function PUT(req: NextRequest) {
 
     if (is_active !== undefined) {
       await sql`UPDATE users SET is_active = ${is_active} WHERE id = ${user_id}`;
+      if (is_active === false) {
+        await deviceSession.hapusSemua(user_id);
+      }
     }
 
     if (role !== undefined) {
