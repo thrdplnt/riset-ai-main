@@ -57,14 +57,12 @@ export default function SessionsPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-  console.log("klik delete:", id); 
   const token = getToken();
   const res = await fetch(`/api/users/sessions/${id}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
-  console.log("response:", data);
   if (data.success) {
     setSuccess("Sesi berhasil dihapus.");
     fetchSessions();
@@ -78,7 +76,7 @@ export default function SessionsPage() {
     setError("");
     setSuccess("");
     const token = getToken();
-    const res = await fetch("/api/user/sessions", {
+    const res = await fetch("/api/users/sessions", {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

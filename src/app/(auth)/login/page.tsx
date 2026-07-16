@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/routes";
@@ -17,8 +18,16 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { InputAdornment, IconButton } from "@mui/material";
 
+function getExistingToken() {
+  return document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
+}
+
 export default function LoginPage() {
   const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,14 +35,26 @@ export default function LoginPage() {
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
+    const existingToken = getExistingToken();
+    if (existingToken) {
+      router.replace(ROUTES.CHAT);
+      return;
+    }
+    setCheckingSession(false);
+
     const reason = sessionStorage.getItem("logout_reason");
     if (reason) {
       setError(reason);
       sessionStorage.removeItem("logout_reason");
     }
-  }, []);
+  }, [router]);
+
+  if (checkingSession) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

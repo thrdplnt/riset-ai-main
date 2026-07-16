@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       id: s.id,
       device: s.device,
       created_at: s.created_at,
-      last_active: s.created_at, // tidak ada last_active di DB, pakai created_at
+      last_active: s.created_at, 
       isCurrent: s.id === payload.sessionId,
     })),
   });

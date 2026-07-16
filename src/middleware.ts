@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/utils/jwt";
+import { deviceSession } from "@/domain/DeviceSession";
 import { ROUTES } from "@/routes";
 
 const publicRoutes = [
@@ -32,6 +33,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(ROUTES.LOGIN, req.url));
   }
 
+  const session = await deviceSession.findByToken(token);
+  if (!session) {
+    const response = NextResponse.redirect(new URL(ROUTES.LOGIN, req.url));
+    response.cookies.set("token", "", { maxAge: 0, path: "/" });
+    return response;
+  }
+
   const isAdminRoute = adminRoutes.some((route) =>
     pathname.startsWith(route)
   );
@@ -44,6 +52,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  runtime: "nodejs",
   matcher: [
     "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
