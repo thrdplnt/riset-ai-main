@@ -182,7 +182,10 @@ export default function ChatPage() {
       setLimitError("Plan Free tidak dapat mengakses AI. Hubungi admin untuk upgrade.");
       return;
     }
-    if (!modelId) return;
+    if (!modelId) {
+      setLimitError("Silakan pilih Model AI terlebih dahulu.");
+      return;
+    }
 
     setLimitError(null);
     let chatId = activeChatId;
@@ -279,6 +282,7 @@ export default function ChatPage() {
   return (
     <Box sx={{
       height: "100vh",
+      "@supports (height: 100svh)": { height: "100svh" },
       display: "flex",
       overflow: "hidden",
       bgcolor: "background.default",
@@ -305,6 +309,7 @@ export default function ChatPage() {
         top: (isMobile && !collapsed) ? 0 : "auto",
         left: (isMobile && !collapsed) ? 0 : "auto",
         height: (isMobile && !collapsed) ? "100vh" : "auto",
+        ...((isMobile && !collapsed) ? { "@supports (height: 100svh)": { height: "100svh" } } : {}),
         zIndex: (isMobile && !collapsed) ? 10 : "auto",
         flexShrink: 0,
         transition: "none",
@@ -323,7 +328,7 @@ export default function ChatPage() {
       <Box sx={{
         flex: 1, minWidth: 0,
         display: "flex", flexDirection: "column",
-        height: "100vh", overflow: "hidden",
+        height: "100vh", "@supports (height: 100svh)": { height: "100svh" }, overflow: "hidden",
       }}>
         <AppBar position="static" elevation={0} sx={{
           bgcolor: "background.paper",
@@ -381,6 +386,7 @@ export default function ChatPage() {
                   supportsWebSearch={supportsWebSearch}
                   blockAttachOnWebSearch={blockAttachOnWebSearch}
                   disabled={isFree}
+                  isMobile={isMobile}
                 />
               </Box>
             </Box>
@@ -450,6 +456,7 @@ export default function ChatPage() {
                   menuDirection="up"
                   supportsWebSearch={supportsWebSearch}
                   disabled={isFree}
+                  isMobile={isMobile}
                 />
               </Box>
             </>

@@ -157,7 +157,10 @@ export default function ChatRoomPage() {
       setLimitError("Plan Free tidak dapat mengakses AI. Hubungi admin untuk upgrade.");
       return;
     }
-    if (!modelId) return;
+    if (!modelId) {
+      setLimitError("Silakan pilih Model AI terlebih dahulu.");
+      return;
+    }
 
     setLimitError(null);
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: prompt };
@@ -302,7 +305,7 @@ export default function ChatRoomPage() {
               </Typography>
               <Box sx={{ width: "100%", maxWidth: 620 }}>
                 <ChatInput onSend={handleSend} modelId={modelId}
-                  onModelChange={handleModelChange} loading={loading} menuDirection="down" />
+                  onModelChange={handleModelChange} loading={loading} menuDirection="down" isMobile={isMobile} />
               </Box>
             </Box>
           ) : (
@@ -346,7 +349,7 @@ export default function ChatRoomPage() {
                   </Box>
                 )}
                 <ChatInput onSend={handleSend} modelId={modelId}
-                  onModelChange={handleModelChange} loading={loading} menuDirection="up" />
+                  onModelChange={handleModelChange} loading={loading} menuDirection="up" isMobile={isMobile} />
               </Box>
             </>
           )}

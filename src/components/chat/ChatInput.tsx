@@ -33,6 +33,7 @@ interface ChatInputProps {
   supportsWebSearch?: boolean;
   blockAttachOnWebSearch?: boolean;
   disabled?: boolean;
+  isMobile?: boolean;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -65,6 +66,7 @@ export const ChatInput = ({
   supportsWebSearch = false,
   blockAttachOnWebSearch = false,
   disabled = false,
+  isMobile = false,
 }: ChatInputProps) => {
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
@@ -225,6 +227,7 @@ export const ChatInput = ({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (isMobile) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
