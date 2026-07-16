@@ -97,7 +97,10 @@ export default function ChatRoomPage() {
   }, [modelId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = bottomRef.current?.parentElement;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const handleNewChat = async () => {
