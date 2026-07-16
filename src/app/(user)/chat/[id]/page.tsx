@@ -204,7 +204,7 @@ export default function ChatRoomPage() {
   };
 
   return (
-    <Box sx={{ height: "100vh", display: "flex", overflow: "hidden", bgcolor: "background.default", position: "relative" }}>
+    <Box sx={{ height: "100vh", "@supports (height: 100svh)": { height: "100svh" }, display: "flex", overflow: "hidden", bgcolor: "background.default", position: "relative" }}>
 
       {/* Mobile backdrop: tap to close sidebar */}
       {isMobile && !collapsed && (
@@ -226,6 +226,7 @@ export default function ChatRoomPage() {
         top: (isMobile && !collapsed) ? 0 : "auto",
         left: (isMobile && !collapsed) ? 0 : "auto",
         height: (isMobile && !collapsed) ? "100vh" : "auto",
+        ...((isMobile && !collapsed) ? { "@supports (height: 100svh)": { height: "100svh" } } : {}),
         zIndex: (isMobile && !collapsed) ? 10 : "auto",
         flexShrink: 0,
         transition: "none",
@@ -242,7 +243,7 @@ export default function ChatRoomPage() {
       </Box>
 
       <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column",
-        height: "100vh", overflow: "hidden", width: "100%" }}>
+        height: "100vh", "@supports (height: 100svh)": { height: "100svh" }, overflow: "hidden", width: "100%" }}>
 
         <AppBar position="static" elevation={0}
           sx={{ bgcolor: "background.paper", borderBottom: "1px solid",
