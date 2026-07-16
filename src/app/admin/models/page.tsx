@@ -44,6 +44,14 @@ const PROVIDERS = [
   { id: "claude", label: "Anthropic" },
 ];
 
+interface SubscriptionPlanUI {
+  id: string;
+  plan_name: string;
+  price: number;
+  duration: number;
+  token_limit: number;
+}
+
 function getToken() {
   if (typeof window === "undefined") return "";
   return document.cookie
@@ -60,7 +68,9 @@ function formatTokenLimit(value: number) {
 
 export default function ModelManagementPage() {
   const [models, setModels] = useState<Model[]>([]);
-  const [tokenLimit, setTokenLimit] = useState<number>(5_000_000);
+  const [plans, setPlans] = useState<SubscriptionPlanUI[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [editingTokenLimit, setEditingTokenLimit] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [presetOpen, setPresetOpen] = useState(false);
@@ -81,8 +91,24 @@ export default function ModelManagementPage() {
         if (data.success) setModels(data.data);
         else if (Array.isArray(data)) setModels(data);
       });
+
+    fetch("/api/admin/subscriptions", { headers: getHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data.length > 0) {
+          setPlans(data.data);
+          setSelectedPlanId(data.data[0].id);
+          setEditingTokenLimit(data.data[0].token_limit);
+        }
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleSelectPlan = (planId: string) => {
+    setSelectedPlanId(planId);
+    const plan = plans.find((p) => p.id === planId);
+    setEditingTokenLimit(plan?.token_limit ?? 0);
+  };
 
   const loadAvailable = async () => {
     setLoadingAvailable(true);
@@ -216,10 +242,29 @@ export default function ModelManagementPage() {
           });
         }
       }
+
+      let planFailed = false;
+      const currentPlan = plans.find((p) => p.id === selectedPlanId);
+      if (currentPlan && currentPlan.token_limit !== editingTokenLimit) {
+        const planRes = await fetch("/api/admin/subscriptions", {
+          method: "PUT",
+          headers: getHeaders(),
+          body: JSON.stringify({ plan_id: selectedPlanId, token_limit: editingTokenLimit }),
+        });
+        const planData = await planRes.json();
+        if (planData.success) {
+          setPlans((prev) => prev.map((p) =>
+            p.id === selectedPlanId ? { ...p, token_limit: editingTokenLimit } : p
+          ));
+        } else {
+          planFailed = true;
+        }
+      }
+
       const res = await fetch("/api/admin/models", { headers: getHeaders() });
       const data = await res.json();
       if (data.success) setModels(data.data);
-      setSaveMsg("Konfigurasi berhasil disimpan!");
+      setSaveMsg(planFailed ? "Model tersimpan, tapi batas token plan gagal disimpan." : "Konfigurasi berhasil disimpan!");
     } catch {
       setSaveMsg("Terjadi kesalahan saat menyimpan.");
     } finally {
@@ -296,28 +341,48 @@ export default function ModelManagementPage() {
 
       {/* Token Limit */}
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Stack direction={{ xs: "column", sm: "row" }}
-          sx={{ justifyContent: "space-between", alignItems: { xs: "flex-start", sm: "flex-start" }, mb: 2, gap: 1.5 }}>
-          <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Batas Token per Pengguna
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Total akumulasi token input &amp; output
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexShrink: 0 }}>
-            <TextField size="small" type="number" value={tokenLimit}
-              onChange={(e) => setTokenLimit(Number(e.target.value))}
-              slotProps={{ htmlInput: { min: 0 } }} sx={{ width: 120 }} />
-            <Typography variant="body2" color="text.secondary">tokens</Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 32 }}>
-              {formatTokenLimit(tokenLimit)}
-            </Typography>
-          </Stack>
-        </Stack>
-        <Slider value={tokenLimit} onChange={(_, val) => setTokenLimit(val as number)}
-          min={0} max={10_000_000} step={100_000} sx={{ color: "text.primary" }} />
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            Batas Token per Pengguna
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Total akumulasi token input &amp; output
+          </Typography>
+        </Box>
+
+        {plans.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            Belum ada paket langganan.
+          </Typography>
+        ) : (
+          <>
+            <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+              <Select value={selectedPlanId} onChange={(e) => handleSelectPlan(e.target.value)}>
+                {plans.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>
+                    {p.plan_name} — {formatTokenLimit(p.token_limit)} tokens
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Stack direction={{ xs: "column", sm: "row" }}
+              sx={{ justifyContent: "space-between", alignItems: { xs: "flex-start", sm: "center" }, mb: 1, gap: 1.5 }}>
+              <Box sx={{ flex: 1 }} />
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexShrink: 0 }}>
+                <TextField size="small" type="number" value={editingTokenLimit}
+                  onChange={(e) => setEditingTokenLimit(Number(e.target.value))}
+                  slotProps={{ htmlInput: { min: 0 } }} sx={{ width: 120 }} />
+                <Typography variant="body2" color="text.secondary">tokens</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 32 }}>
+                  {formatTokenLimit(editingTokenLimit)}
+                </Typography>
+              </Stack>
+            </Stack>
+            <Slider value={editingTokenLimit} onChange={(_, val) => setEditingTokenLimit(val as number)}
+              min={0} max={10_000_000} step={100_000} sx={{ color: "text.primary" }} />
+          </>
+        )}
       </Paper>
 
       {/* Models list */}

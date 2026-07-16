@@ -29,11 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${poppins.variable} ${manrope.variable} ${inter.variable}`} style={{ overflow: "hidden", height: "100%" }}>
-      <body style={{ overflow: "hidden", margin: 0, height: "100%" }}>
+    <html lang="en" className={`${poppins.variable} ${manrope.variable} ${inter.variable}`}>
+      <body style={{ margin: 0 }}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <style>{`html, body { overflow: hidden !important; scrollbar-width: none !important; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none !important; }`}</style>
+          <style>{`html, body { scrollbar-width: none; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }`}</style>
           <AuthProvider>
             {children}
           </AuthProvider>

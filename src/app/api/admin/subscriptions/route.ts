@@ -72,3 +72,38 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function PUT(req: NextRequest) {
+  try {
+    const token = getToken(req);
+    const payload = await verifyJwt(token!);
+    if (!payload || payload.role !== "admin") {
+      return NextResponse.json({ success: false, message: "Unauthorized" } satisfies ApiResponse, { status: 401 });
+    }
+
+    const { plan_id, token_limit } = await req.json();
+
+    if (!plan_id || typeof token_limit !== "number" || token_limit < 0) {
+      return NextResponse.json({
+        success: false,
+        message: "plan_id dan token_limit (angka >= 0) wajib diisi",
+      } satisfies ApiResponse, { status: 400 });
+    }
+
+    const existing = await sql`SELECT id FROM subscription_plans WHERE id = ${plan_id}`;
+    if (existing.length === 0) {
+      return NextResponse.json({ success: false, message: "Plan tidak ditemukan" } satisfies ApiResponse, { status: 404 });
+    }
+
+    await sql`UPDATE subscription_plans SET token_limit = ${token_limit} WHERE id = ${plan_id}`;
+
+    return NextResponse.json({ success: true, message: "Token limit berhasil diperbarui" } satisfies ApiResponse);
+
+  } catch (error: any) {
+    console.error("PUT subscription plan error:", error);
+    return NextResponse.json(
+      { success: false, message: error.message ?? "Terjadi kesalahan server" } satisfies ApiResponse,
+      { status: 500 }
+    );
+  }
+}
