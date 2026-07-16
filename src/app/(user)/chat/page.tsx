@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { AppBar, Box, Stack, Toolbar, Snackbar, Alert } from "@mui/material";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { MessageBubble } from "@/components/chat/MessageBubble";
@@ -33,13 +34,15 @@ interface Chat {
   created_at: string;
 }
 
-export default function ChatPage() {
+function ChatPageContent() {
   const { logout, user } = useAuth();
+  const searchParams = useSearchParams();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoadingInitialChat, setIsLoadingInitialChat] = useState(() => Boolean(searchParams.get("id")));
 
   const [modelId, setModelId] = useState("");
   const [modelName, setModelName] = useState("");
@@ -123,11 +126,13 @@ export default function ChatPage() {
     setModelName("");
     setRemaining(null);
     setTotal(null);
+    window.history.pushState(null, "", "/chat");
   };
 
   const handleSelectChat = async (id: string) => {
     setActiveChatId(id);
     setLimitError(null);
+    window.history.pushState(null, "", `/chat?id=${id}`);
     const res = await fetch(`/api/chat/${id}`);
     const data = await res.json();
     if (data.success) {
@@ -161,12 +166,21 @@ export default function ChatPage() {
     }
   };
 
+  useEffect(() => {
+    const idFromUrl = searchParams.get("id");
+    if (idFromUrl) {
+      handleSelectChat(idFromUrl).finally(() => setIsLoadingInitialChat(false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleDeleteChat = async (id: string) => {
     await fetch(`/api/chat/${id}`, { method: "DELETE" });
     setChats((prev) => prev.filter((c) => c.id !== id));
     if (activeChatId === id) {
       setActiveChatId(null);
       setMessages([]);
+      window.history.pushState(null, "", "/chat");
     }
   };
 
@@ -204,6 +218,7 @@ export default function ChatPage() {
         chatId = data.data.id;
         setChats((prev) => [data.data, ...prev]);
         setActiveChatId(chatId);
+        window.history.pushState(null, "", `/chat?id=${chatId}`);
       }
     }
 
@@ -280,7 +295,7 @@ export default function ChatPage() {
       setBlockAttachOnWebSearch(current?.provider_id === "openai"); 
     }, [modelId, allModels]);
 
-  const showEmptyState = !activeChatId || messages.length === 0;
+  const showEmptyState = !isLoadingInitialChat && (!activeChatId || messages.length === 0);
 
   return (
     <Box sx={{
@@ -362,7 +377,27 @@ export default function ChatPage() {
           display: "flex", flexDirection: "column",
           overflow: "hidden",
         }}>
-          {showEmptyState ? (
+          {isLoadingInitialChat ? (
+            <Box sx={{
+              flex: 1, display: "flex",
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Stack sx={{ flexDirection: "row", alignItems: "center", gap: 0.5 }}>
+                {[0, 0.15, 0.3].map((delay) => (
+                  <Box key={delay} sx={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    bgcolor: "text.secondary",
+                    animation: "bounce 1s ease infinite",
+                    animationDelay: `${delay}s`,
+                    "@keyframes bounce": {
+                      "0%, 80%, 100%": { transform: "scale(0.8)" },
+                      "40%": { transform: "scale(1.2)" },
+                    },
+                  }} />
+                ))}
+              </Stack>
+            </Box>
+          ) : showEmptyState ? (
             <Box sx={{
               flex: 1,
               display: "flex", flexDirection: "column",
@@ -478,5 +513,13 @@ export default function ChatPage() {
         </Alert>
       </Snackbar>
     </Box>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={null}>
+      <ChatPageContent />
+    </Suspense>
   );
 }
