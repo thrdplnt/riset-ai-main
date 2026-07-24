@@ -62,7 +62,8 @@ export async function callGemini(
   return {
     text: data.candidates[0].content.parts[0].text,
     input_tokens: data.usageMetadata.promptTokenCount,
-    output_tokens: data.usageMetadata.candidatesTokenCount,
+    output_tokens: data.usageMetadata.candidatesTokenCount
+      + (data.usageMetadata.thoughtsTokenCount || 0),
     is_truncated: data.candidates[0].finishReason === 'MAX_TOKENS',
   };
 }

@@ -75,7 +75,7 @@ export async function callAnthropic(
       messages,
       ...(req.web_search ? {
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      } :  {})
+      } : {})
     }),
   });
 
@@ -91,7 +91,9 @@ export async function callAnthropic(
 
   return {
     text,
-    input_tokens: data.usage.input_tokens,
+    input_tokens: data.usage.input_tokens
+      + (data.usage.cache_read_input_tokens || 0)
+      + (data.usage.cache_creation_input_tokens || 0),
     output_tokens: data.usage.output_tokens,
     is_truncated: data.stop_reason === 'max_tokens',
   };
