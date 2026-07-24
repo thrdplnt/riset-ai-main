@@ -15,8 +15,8 @@ export async function changePlan(
   const { token_limit, duration } = plan[0];
 
   const oldPeriod = await sql`
-    SELECT id FROM subscription_periods
-    WHERE user_id = ${user_id} AND is_active = true
+    SELECT id, end_date FROM subscription_periods
+    WHERE user_id = ${user_id} AND is_active = true AND end_date >= CURRENT_DATE
     LIMIT 1
   `;
 
@@ -37,12 +37,17 @@ export async function changePlan(
   }
 
   const new_period_id = randomUUID();
+  const hasActiveOldPeriod = oldPeriod.length > 0;
+  const endDateExpr = hasActiveOldPeriod
+    ? sql`${oldPeriod[0].end_date}::date + ${duration}::int`
+    : sql`CURRENT_DATE + ${duration}::int`;
+
   await sql`
     INSERT INTO subscription_periods
       (id, user_id, plan_id, start_date, end_date, is_active, limit_snapshot)
     VALUES
       (${new_period_id}, ${user_id}, ${new_plan_id},
-       CURRENT_DATE, CURRENT_DATE + ${duration}::int,
+       CURRENT_DATE, ${endDateExpr},
        true, ${token_limit})
   `;
 

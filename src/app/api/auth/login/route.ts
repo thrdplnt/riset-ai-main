@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       token,
       device,
+      sessionId,
     });
 
     return NextResponse.json({

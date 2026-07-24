@@ -35,12 +35,26 @@ export class deviceSession {
     return parseInt(rows[0].count);
   }
 
+  static async adaSesiBaru(userId: string, withinSeconds: number = 10): Promise<boolean> {
+    const rows = await sql`
+      SELECT 1
+      FROM device_sessions
+      WHERE user_id = ${userId}
+        AND is_active = true
+        AND expires_at > NOW()
+        AND created_at > NOW() - (${withinSeconds} || ' seconds')::interval
+      LIMIT 1
+    `;
+    return rows.length > 0;
+  }
+
   static async buatSesiBaru(data: {
     userId: string;
     token: string;
     device: string;
+    sessionId?: string;
   }): Promise<deviceSession> {
-    const id = crypto.randomUUID();
+    const id = data.sessionId ?? crypto.randomUUID();
     const token_hash = hashToken(data.token);
     const expires_at = getExpiryDate();
 

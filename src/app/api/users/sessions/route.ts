@@ -31,10 +31,12 @@ export async function DELETE(req: NextRequest) {
   const payload = await verifyJwt(token);
   if (!payload) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
-  // hapus semua lalu aktifkan kembali yang current
-  await deviceSession.hapusSemua(payload.userId); // sudah ada
-  // buat ulang sesi current tetap aktif tidak bisa, jadi skip sesi current saja
-  await sql`UPDATE device_sessions SET is_active = true WHERE id = ${payload.sessionId}`;
+  await sql`
+    UPDATE device_sessions
+    SET is_active = false
+    WHERE user_id = ${payload.userId}
+      AND id != ${payload.sessionId}
+  `;
 
   return NextResponse.json({ success: true, message: "Semua sesi lain berhasil dihapus" });
 }

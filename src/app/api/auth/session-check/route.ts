@@ -33,9 +33,17 @@ export async function GET(req: NextRequest) {
         } satisfies ApiResponse, { status: 401 });
       }
 
+      const adaSesiBaru = await deviceSession.adaSesiBaru(payload.userId);
+      if (adaSesiBaru) {
+        return NextResponse.json({
+          success: false,
+          message: "Sesi berakhir: Batas login 2 perangkat telah terlampaui.",
+        } satisfies ApiResponse, { status: 401 });
+      }
+
       return NextResponse.json({
         success: false,
-        message: "Sesi berakhir: Batas login 2 perangkat telah terlampaui.",
+        message: "Sesi berakhir. Silakan login kembali.",
       } satisfies ApiResponse, { status: 401 });
     }
 
