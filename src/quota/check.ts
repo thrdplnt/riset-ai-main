@@ -5,7 +5,7 @@ import { Attachment } from "@/providers/types";
 
 function getMinimumOutputBudget(config: ModelConfig): number {
   const maxOutput = config.max_output_tokens || 1024;
-  return Math.max(64, Math.min(512, Math.floor(maxOutput / 4)));
+  return 2500;
 }
 
 export interface QuotaCheckResult {

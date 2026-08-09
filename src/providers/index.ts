@@ -40,7 +40,7 @@ export async function callLLM(
   let effectiveMaxOutput: number;
 
   if (remaining_quota !== undefined && input_tokens !== undefined) {
-    const minimumOutputBudget = Math.max(64, Math.min(512, Math.floor((config.max_output_tokens || 1024) / 4)));
+    const minimumOutputBudget = 2500;
     const remainingForOutput = remaining_quota - input_tokens;
 
     if (remainingForOutput < minimumOutputBudget) {
